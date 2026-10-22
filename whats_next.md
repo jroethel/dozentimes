@@ -78,4 +78,8 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Decided by Jeremy: rule (d) replaces only within a shared slug or when the later handoff names the earlier one (#12).
 - Every test in the plan was run against HEAD f87a374 and behaves as its task predicts, except Task 4's one-word guard, which needs Task 1's closed_by column first.
 - The e2e statement wording was checked offline with the fallback parser: s2 needs "today", or it inherits q7's Sep 30 as-of.
-- Next: Rubix review of the plan, then execution. Nothing is executed yet.
+- Rubix review (2026-10-22): 16 findings, Jeremy applied all. Revision notes are at the end of the plan.
+- Jeremy decided: replay may print a 20-case sample of one rule's closures to the terminal only (--show-sample), never to a file.
+- The plan now stops at checkpoints A (after T2), B (after T3), C (before T6, the P_STALE value) and D (after T8).
+- All revised plan tests were re-run against f87a374 and behave as predicted, with reword tests 2, 4 and 5 needing Task 1's column first.
+- Next: execute the plan from Task 1. Nothing is executed yet.
