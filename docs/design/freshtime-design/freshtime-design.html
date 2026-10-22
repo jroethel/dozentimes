@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- elucid-flow brand design. Built with Claude. To edit: invoke /craft-build brand=elucid-flow first; it loads the elucid-flow brand book before any change. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>freshtime design</title>
+<meta name="description" content="How freshtime-core, freshtime-intf, freshtime-agnt and pi-time fit together on branch feat/pi-time-poc, what the six test layers show, and what to build next.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light dark;
+  --th-bg: light-dark(#e9edf3, #0f1216);
+  --th-panel: light-dark(#f7f9fc, #171b22);
+  --th-field: light-dark(#ffffff, #0f1216);
+  --th-ink: light-dark(#141a24, #e9ecf1);
+  --th-ink-2: light-dark(#3f4a5e, #aeb6c4);
+  --th-ink-3: light-dark(#566178, #98a1b1);
+  --th-line: light-dark(#c3cbd9, #2e3542);
+  --th-line-strong: light-dark(#66738b, #7c879b);
+  --th-struct: light-dark(#4b5a76, #5b6b86);
+  --th-struct-ink: light-dark(#ffffff, #ffffff);
+  --th-struct-2: light-dark(#aab6cc, #3d485c);
+  --th-action: light-dark(#ffa31a, #ffa31a);
+  --th-action-ink: light-dark(#141a24, #0f1216);
+  --th-action-wash: light-dark(#fff0d6, #2b1f0a);
+  --th-action-edge: light-dark(#a8620a, #ffa31a);
+  --th-ok: light-dark(#1f7a4d, #5fd3a0);
+  --th-ok-ink: light-dark(#ffffff, #0a1a12);
+  --th-ok-text: light-dark(#1b6e45, #5fd3a0);
+  --th-idle: light-dark(#5a6a86, #8c99b0);
+  --th-alert: light-dark(#b3261e, #ff7a7a);
+  --th-alert-ink: light-dark(#ffffff, #1a0a0a);
+  --th-focus: light-dark(#1f3fbf, #ffffff);
+  --sans:"Archivo",system-ui,sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+  --index:232px; --gut:28px; --hang:96px;
+}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px;scrollbar-color:var(--th-line-strong) var(--th-panel);accent-color:var(--th-action)}
+body{margin:0;background:var(--th-panel);color:var(--th-ink);font:400 18px/1.62 var(--sans);font-stretch:100%;caret-color:var(--th-action-edge)}
+::selection{background:var(--th-action);color:var(--th-action-ink)}
+a{color:var(--th-ink);text-decoration-color:var(--th-action);text-decoration-thickness:2px;text-underline-offset:3px}
+a:hover{color:var(--th-action-edge)}
+:focus-visible{outline:2px solid var(--th-focus);outline-offset:3px}
+code{font-family:var(--mono);font-size:max(12px,.84em);background:var(--th-field);border:1px solid var(--th-line);padding:0 5px;overflow-wrap:anywhere}
+pre{background:var(--th-field);border-top:3px solid var(--th-ink);padding:18px 20px;overflow-x:auto;font:13px/1.6 var(--mono);margin:22px 0;scrollbar-width:thin}
+pre code{background:none;border:0;padding:0;font-size:inherit;overflow-wrap:normal}
+b{font-weight:700}
+.num,.tag,td,.totals,.score td{font-variant-numeric:tabular-nums}
+
+.frame{max-width:1380px;margin:0 auto;padding:36px var(--gut) 96px}
+.head{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:0 48px;align-items:end;padding-bottom:30px;border-bottom:3px solid var(--th-ink)}
+.head .ttl{min-width:0}
+h1{font:800 clamp(36px,5.2vw,72px)/.98 var(--sans);font-stretch:108%;letter-spacing:-.03em;margin:0 0 22px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--th-action-ink);background:var(--th-action);padding:0 .12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.lede{font-size:20px;line-height:1.5;max-width:60ch;color:var(--th-ink-2);margin:0}
+.tb{margin:0;display:grid;grid-template-columns:1fr 1fr;border-top:3px solid var(--th-ink)}
+.tb>div{border-bottom:1px solid var(--th-line);padding:9px 0 10px;min-width:0}
+.tb>div:nth-child(odd):not(.wide){padding-right:14px}
+.tb>div.wide{grid-column:1/-1}
+.tb>div:last-child{border-bottom:0}
+.tb dt{font:700 12px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink-3)}
+.tb dd{margin:3px 0 0;font:600 16px/1.3 var(--sans)}
+.toggle{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:10px;font:700 13px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink)}
+.toggle i{width:36px;height:18px;background:var(--th-line);position:relative;flex:none}
+.toggle i::after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;background:var(--th-action);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+:root[data-theme="dark"] .toggle i::after{transform:translateX(18px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toggle i::after{transform:translateX(18px)}}
+.rev{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;font:700 12px/1 var(--mono);color:var(--th-action-ink);background:var(--th-action);vertical-align:2px;flex:none}
+
+.verdict{display:grid;grid-template-columns:184px minmax(0,1fr);gap:0;margin:34px 0 8px;background:var(--th-struct);color:var(--th-struct-ink)}
+.verdict .vm{padding:26px 0 0 26px}
+.verdict .vm span{display:block;font:800 132px/.78 var(--sans);font-stretch:112%;letter-spacing:-.04em;color:var(--th-action)}
+.verdict>div:last-child{padding:26px 32px 26px 24px;min-width:0}
+.verdict p{max-width:76ch;margin:0 0 14px}
+.verdict a{color:var(--th-struct-ink)}
+.verdict .big{font:700 24px/1.32 var(--sans);letter-spacing:-.01em;max-width:44ch}
+.verdict .big b{font-weight:700}
+.verdict .revnote{font-size:15px;opacity:.9;border-top:1px solid rgb(255 255 255 / .28);padding-top:12px}
+.verdict code{background:rgb(0 0 0 / .18);border-color:rgb(255 255 255 / .25);color:inherit}
+.start{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:20px}
+.start a{font:700 14px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--th-action-ink);background:var(--th-action);padding:13px 16px;text-decoration:none}
+.start a:hover{color:var(--th-action-ink);filter:brightness(1.07)}
+.start .note{color:var(--th-struct-ink);opacity:.9}
+.note{color:var(--th-ink-2);font-size:15px}
+p.note{border-left:1px solid var(--th-action-edge);padding:2px 0 2px 14px}
+
+.body{display:grid;grid-template-columns:var(--index) minmax(0,1fr);gap:0 48px;margin-top:0}
+.index{position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);overflow-y:auto;scrollbar-width:thin;margin-top:34px;border-top:3px solid var(--th-ink)}
+.index .ih{display:flex;justify-content:space-between;padding:10px 0 8px;font:700 12px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--th-ink)}
+.index .ih span:last-child{font-family:var(--mono);font-weight:600}
+.index a{display:grid;grid-template-columns:30px 1fr auto;gap:6px;align-items:baseline;padding:6px 8px 6px 0;border-bottom:1px solid var(--th-line);text-decoration:none;color:var(--th-ink-2);font:500 14.5px/1.3 var(--sans);transition:background .15s,color .15s,padding .2s}
+.index a:last-child{border-bottom:0}
+.index a b{font:600 12px var(--mono);color:var(--th-ink-3)}
+.index a:hover{color:var(--th-ink);background:var(--th-field)}
+.index a.on{background:var(--th-action);color:var(--th-action-ink);padding-left:8px;font-weight:700}
+.index a.on b{color:var(--th-action-ink)}
+.index a.on .rev{background:var(--th-action-ink);color:var(--th-action)}
+.tabs{display:none}
+
+main{min-width:0}
+section>:is(p,ul,ol,h3){margin-left:var(--hang)}
+section>:is(p,ul,ol){max-width:70ch}
+li{margin:6px 0}
+ul,ol{padding-left:22px}
+li::marker{color:var(--th-ink-3)}
+.text-l{font-size:20px;line-height:1.55}
+.text-xl{font-size:23px;line-height:1.48;letter-spacing:-.005em}
+ul.accent{list-style-type:square}
+ul.accent>li::marker{color:var(--th-action)}
+ol.accent{padding-left:1.75em}
+ol.accent>li::marker{color:var(--th-action-edge);font-weight:800;font-stretch:108%;font-variant-numeric:tabular-nums}
+
+h2{display:grid;grid-template-columns:var(--hang) minmax(0,1fr) auto;align-items:start;gap:0;margin:84px 0 22px;padding-top:14px;border-top:3px solid var(--th-ink);font:800 clamp(25px,2.7vw,34px)/1.1 var(--sans);font-stretch:104%;letter-spacing:-.02em}
+h2 .no{font:800 54px/.82 var(--sans);font-stretch:112%;letter-spacing:-.04em;color:var(--th-struct)}
+h2 .t{text-wrap:balance;padding-top:4px}
+h2 .sht{display:flex;gap:10px;align-items:center;font:600 12px/1 var(--mono);color:var(--th-ink-3);white-space:nowrap;padding-top:10px}
+h3{font:700 21px/1.25 var(--sans);margin:38px 0 8px}
+h4{font:700 12.5px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px}
+
+.grid{display:grid;gap:0 24px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:26px 0}
+.card{border-top:3px solid var(--th-ink);padding:12px 0 18px;min-width:0}
+.card p{margin:8px 0 0;font-size:14.5px;line-height:1.45;color:var(--th-ink-2)}
+.num{font:800 54px/1 var(--sans);font-stretch:108%;letter-spacing:-.035em}
+.grid:not(.cands) .card:first-child{background:var(--th-action);color:var(--th-action-ink);border-top-color:var(--th-action-ink);padding:12px 14px 18px}
+.grid:not(.cands) .card:first-child p{color:var(--th-action-ink)}
+.cands{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px 24px}
+.cands .card{border-top:8px solid var(--k,var(--th-struct));background:var(--th-field);padding:14px 18px 6px}
+.cands .card h3{margin:2px 0 6px;font-size:23px}
+.cands .card p{color:var(--th-ink);font-size:15px}
+.cands .card .fact{font:12.5px/1.55 var(--mono);color:var(--th-ink-3)}
+
+.tbl{overflow-x:auto;margin:26px 0;border-top:3px solid var(--th-ink);background:var(--th-field);scrollbar-width:thin}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:620px}
+th,td{padding:11px 14px;border-bottom:1px solid var(--th-line);vertical-align:top;text-align:left}
+th{font:700 12px/1.3 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink);border-bottom:1.5px solid var(--th-ink);vertical-align:bottom}
+tr:last-child td{border-bottom:0}
+td.k{font-weight:700;white-space:nowrap}
+tbody tr:hover td{background:var(--th-panel)}
+tr.rec td{background:var(--th-action) !important;color:var(--th-action-ink)}
+tr.rec code{background:rgb(0 0 0 / .08);border-color:rgb(0 0 0 / .28);color:inherit}
+.why{display:block;color:var(--th-ink-2);font-size:13.5px;margin-top:5px;line-height:1.45}
+.tag{display:inline-block;font:700 12px/1 var(--sans);letter-spacing:.05em;text-transform:uppercase;padding:5px 8px;white-space:nowrap;background:var(--th-line);color:var(--th-ink)}
+.tag.good{background:var(--th-ok);color:var(--th-ok-ink)} .tag.bad{background:var(--th-alert);color:var(--th-alert-ink)} .tag.warn{background:var(--th-action);color:var(--th-action-ink)}
+
+.score table{min-width:940px}
+.score td{font-size:15px}
+.score .colon{background:var(--th-action-wash) !important}
+.score th:first-child,.score td:first-child{position:sticky;left:0;background:var(--th-field);z-index:1}
+.sc{display:inline-grid;place-items:center;width:38px;height:38px;font:800 20px/1 var(--sans);margin-bottom:2px}
+.sc.s5{background:var(--th-struct);color:var(--th-struct-ink)}
+.sc.s4{background:var(--th-struct-2);color:var(--th-ink)}
+.sc.s3{background:var(--th-line);color:var(--th-ink)}
+.sc.s2{box-shadow:inset 0 0 0 2px var(--th-ink);color:var(--th-ink)}
+.sc.s1{background:var(--th-alert);color:var(--th-alert-ink)}
+.score tr.total td{font:800 28px/1 var(--sans);border-top:3px solid var(--th-ink);padding-top:14px}
+.score tr.total td:nth-child(3){color:var(--th-action-edge)}
+.totals{display:grid;gap:10px;margin:24px 0 8px var(--hang);max-width:760px;padding:16px 0 4px;border-top:3px solid var(--th-ink)}
+.totals div{display:grid;grid-template-columns:150px 1fr 44px;gap:14px;align-items:center;font:600 14.5px var(--sans)}
+.totals s{display:block;height:20px;background-color:var(--th-struct-2);text-decoration:none;width:calc(var(--v) / 55 * 100%);transform-origin:left;transition:transform 1.1s cubic-bezier(.2,.8,.2,1);
+  background-image:repeating-linear-gradient(90deg,transparent 0 calc(100% / var(--v) - 1.5px),var(--th-panel) calc(100% / var(--v) - 1.5px) calc(100% / var(--v)))}
+.totals div.hi s{background-color:var(--th-action)}
+.totals div.lo s{background-color:var(--th-alert)}
+.totals em{font:800 22px/1 var(--sans);font-style:normal;text-align:right}
+.totals div.hi em{color:var(--th-action-edge)}
+.js .totals:not(.live) s{transform:scaleX(0)}
+
+.two{display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin:18px 0}
+.two>div{min-width:0;background:var(--th-field);padding:14px 20px 10px}
+.gl{border-top:6px solid var(--th-ok)} .ll{border-top:6px solid var(--th-alert)}
+.gl h4,.gl h3{color:var(--th-ok-text)} .ll h4,.ll h3{color:var(--th-alert)}
+.two ul,.two ol{margin:0;font-size:15.5px;padding-left:20px}
+.two h3{margin-top:4px}
+
+.steps{counter-reset:s;list-style:none;padding:0;max-width:none !important;border-top:3px solid var(--th-ink)}
+.steps li{counter-increment:s;display:grid;grid-template-columns:64px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--th-line);margin:0}
+.steps li::before{content:counter(s);font:800 40px/.9 var(--sans);font-stretch:110%;color:var(--th-struct)}
+.steps li>div{min-width:0}
+.steps b{display:block;font:700 18px/1.3 var(--sans);margin-bottom:4px}
+.steps span{font-size:15.5px;color:var(--th-ink-2)}
+
+figure{margin:40px 0;border-top:3px solid var(--th-ink)}
+.fh{display:flex;align-items:baseline;gap:16px;padding:10px 0 12px}
+.fh .id{font:700 12.5px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink-3);white-space:nowrap;display:flex;align-items:center;gap:8px;min-width:calc(var(--hang) - 16px)}
+.fh .tt{font:700 19px/1.25 var(--sans);flex:1}
+.key{display:flex;flex-wrap:wrap;gap:8px 18px;padding:0 0 14px var(--hang);font:500 13px/1.3 var(--sans);color:var(--th-ink-2)}
+.key i{display:inline-block;width:14px;height:14px;margin-right:7px;vertical-align:-2px;background:var(--th-panel);box-shadow:inset 0 0 0 1.5px var(--th-line-strong)}
+.key i.agent{background:var(--th-struct);box-shadow:none}
+.key i.code{background:var(--th-field);box-shadow:inset 0 0 0 2px var(--th-ink)}
+.key i.gate{background:var(--th-action);box-shadow:none}
+.key i.you{background:var(--th-action-wash);box-shadow:none;outline:2px dashed var(--th-action-edge);outline-offset:-2px}
+.key i.rt{background:var(--th-field);box-shadow:inset 0 0 0 2px var(--th-idle)}
+.key i.kit{background:var(--th-struct-2);box-shadow:none}
+.key i.ok{box-shadow:inset 0 0 0 2px var(--th-ok)}
+.key i.gap,.key i.hot{box-shadow:inset 0 0 0 2px var(--th-alert)}
+.key i.wait{box-shadow:none;outline:1.5px dashed var(--th-idle);outline-offset:-1.5px}
+.key i.plain{box-shadow:inset 0 0 0 1px var(--th-line-strong)}
+.fb{padding:26px 24px 28px;position:relative;overflow-x:auto;background:var(--th-field);scrollbar-width:thin}
+figure.wide .fh::after{content:"scroll \2192";font:700 12px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink-3);white-space:nowrap}
+figcaption{font-size:14.5px;color:var(--th-ink-2);line-height:1.55;padding:12px 0 0 var(--hang);max-width:calc(70ch + var(--hang))}
+figcaption b{color:var(--th-ink)}
+
+.sch{--x:auto;--y:auto;position:relative;display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));column-gap:var(--cg,40px);row-gap:var(--rg,56px);align-items:center}
+.sch .n{grid-column:var(--x);grid-row:var(--y);position:relative;z-index:2;background:var(--th-panel);box-shadow:inset 0 0 0 1.5px var(--th-line-strong);padding:9px 12px 10px;min-width:0;align-self:stretch;display:flex;flex-direction:column;justify-content:center;transition:box-shadow .2s,background .2s}
+.sch .n b{display:block;font:700 15px/1.2 var(--sans);color:var(--th-ink)}
+.sch .n small{display:block;overflow-wrap:anywhere;font-size:13px;line-height:1.4;color:var(--th-ink-2);margin-top:3px}
+.sch .n small+small{margin-top:1px}
+.sch .n.ctr{text-align:center}
+.sch .n.ghost{background:transparent;box-shadow:none;outline:1.5px dashed var(--th-line-strong);outline-offset:-1.5px}
+.sch .n:hover{box-shadow:inset 0 0 0 3px var(--th-ink)}
+.sch .n.agent{background:var(--th-struct);box-shadow:none}
+.sch .n.agent b,.sch .n.agent small{color:var(--th-struct-ink)}
+.sch .n.code{background:var(--th-field);box-shadow:inset 0 0 0 2px var(--th-ink)}
+.sch .n.code b{font-family:var(--mono);font-weight:600;font-size:13.5px}
+.sch .n.gate{background:var(--th-action);box-shadow:none}
+.sch .n.gate b,.sch .n.gate small{color:var(--th-action-ink)}
+.sch .n.you{background:var(--th-action-wash);box-shadow:none;outline:2px dashed var(--th-action-edge);outline-offset:-2px}
+.sch .n.rt{background:var(--th-field);box-shadow:inset 0 0 0 2px var(--th-idle)}
+.sch .n.kit{background:var(--th-struct-2);box-shadow:none}
+.sch .n.ok{background:var(--th-field);box-shadow:inset 0 0 0 2px var(--th-ok)} .sch .n.ok b{color:var(--th-ok-text)}
+.sch .n.gap,.sch .n.hot{background:var(--th-field);box-shadow:inset 0 0 0 2px var(--th-alert)} .sch .n.gap b,.sch .n.hot b{color:var(--th-alert)}
+.sch .n.wait{background:var(--th-field);box-shadow:none;outline:1.5px dashed var(--th-idle);outline-offset:-1.5px}
+.sch .n.plain{box-shadow:inset 0 0 0 1px var(--th-line-strong)}
+.sch .n.note{background:none;box-shadow:none}
+.sch .n.agent:hover,.sch .n.gate:hover,.sch .n.kit:hover{box-shadow:inset 0 0 0 3px var(--th-ink)}
+.sch .stack{grid-column:var(--x);grid-row:var(--y);display:flex;flex-direction:column;gap:10px;min-width:0}
+.sch .band-l{grid-column:var(--x,1/-1);grid-row:var(--y);font:700 12px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink-3);border-top:1.5px solid var(--th-ink);padding-top:8px;margin-bottom:-36px;align-self:end}
+.sch .band-l.col{border:0;margin:0;padding:0}
+.wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:1;pointer-events:none}
+.wires path{fill:none;stroke-width:2;stroke-linejoin:round}
+.wires path.flow{stroke-width:3;stroke-linecap:round;stroke-dasharray:.1 14;opacity:0}
+.wires .dash{stroke-dasharray:6 5}
+.wl{position:absolute;z-index:3;transform:translate(-50%,calc(-100% - 3px));font:700 12px/1.25 var(--sans);color:var(--lc,var(--th-ink-2));background:var(--th-field);padding:2px 6px;max-width:160px;text-align:center;pointer-events:none}
+.wl.v{transform:translate(7px,-50%);text-align:left;padding-left:2px}
+.wl.hb{transform:translate(-50%,3px)}
+.wl.vl{transform:translate(calc(-100% - 7px),-50%);text-align:right}
+@media (prefers-reduced-motion:no-preference){
+  .js .sch:not(.drawn) .wires path.w{stroke-dashoffset:var(--len)}
+  .wires path.w{stroke-dasharray:var(--len) var(--len);transition:stroke-dashoffset 1.1s cubic-bezier(.45,.05,.25,1)}
+  .wires path.w.dash{stroke-dasharray:6 5;transition:none}
+  .js .sch:not(.drawn) .wl{opacity:0}
+  .wl{transition:opacity .4s .5s}
+  .sch.drawn .wires path.flow{opacity:.85;animation:flow 1.8s linear infinite}
+  ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+}
+@keyframes flow{to{stroke-dashoffset:-14.1}}
+
+.lane{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:10px 28px;padding:16px 0 20px;border-bottom:1px solid var(--th-line)}
+.lane:last-child{border-bottom:0}
+.lane h4{grid-column:1/-1;margin:0;display:flex;align-items:center;gap:12px;font-size:12.5px}
+.lane h4 span{display:grid;place-items:center;width:28px;height:28px;background:var(--th-ink);color:var(--th-field);font:800 15px/1 var(--sans);flex:none}
+.lane p{margin:0;font-size:14px;color:var(--th-ink-2);align-self:center}
+.lane .sch{--rg:22px}
+
+.cmp{display:grid;grid-template-columns:100px repeat(3,minmax(0,1fr));font-size:14.5px;border-top:1.5px solid var(--th-ink)}
+.cmp>div{padding:10px 12px;min-width:0;border-bottom:1px solid var(--th-line)}
+.cmp .h{font:800 18px/1.2 var(--sans);border-bottom:1.5px solid var(--th-ink)}
+.cmp .rk{font:700 12px/1.3 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink-3)}
+.cmp .hi{background:var(--th-action-wash)}
+.cmp .h.hi{background:var(--th-action);color:var(--th-action-ink)}
+.cmp .row1{font-weight:700;border-bottom:1.5px solid var(--th-ink)}
+.cmp>div:nth-last-child(-n+4){border-bottom:0}
+
+.radar-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,.7fr);gap:28px;align-items:center}
+.radar svg{width:100%;height:auto;display:block}
+.radar text{font-family:var(--sans);font-weight:700;fill:var(--th-ink)}
+.radar text.v{fill:var(--th-ink-3);font-family:var(--mono);font-weight:500}
+.radar .ring{fill:none;stroke:var(--th-line)}
+.radar .spoke{stroke:var(--th-line)}
+.radar .poly{transition:opacity .3s}
+.rctl{display:flex;flex-direction:column;gap:8px}
+.rctl button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--th-panel);box-shadow:inset 0 0 0 1.5px var(--th-ink);font:700 14px/1.2 var(--sans)}
+.rctl button i{width:22px;height:14px;background:var(--k);flex:none}
+.rctl button:first-of-type i{background:none;box-shadow:inset 0 0 0 2px var(--k);outline:2px dashed var(--th-panel);outline-offset:-2px}
+.rctl button[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
+.rctl button:focus-visible{outline:2px solid var(--th-focus)}
+.rctl p{font-size:14px;color:var(--th-ink-2);margin:6px 0 0}
+.rlist{display:none;list-style:none;margin:6px 0 0;padding:0;font:500 13px/1.3 var(--sans);border-top:1.5px solid var(--th-ink)}
+.rlist li{display:grid;grid-template-columns:28px 1fr auto;gap:6px;padding:6px 0;margin:0;border-bottom:1px solid var(--th-line)}
+.rlist li b{font-family:var(--mono);font-weight:600}
+.rlist span{color:var(--th-ink-3);font-family:var(--mono)}
+.compact .rlist{display:block}
+
+.paths{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:22px 0}
+.path{background:var(--th-field);border-top:6px solid var(--k,var(--th-struct));min-width:0}
+.path h4{padding:12px 16px 0;margin:0;font-size:13px}
+.path div{padding:6px 16px 16px;font-size:15px}
+.path ul{margin:6px 0 0;padding-left:18px}
+.foot{margin-top:64px;font-size:14px;color:var(--th-ink-2);border-top:3px solid var(--th-ink);padding-top:16px;max-width:none !important}
+
+@media (max-width:1080px){
+  .body{grid-template-columns:minmax(0,1fr)}
+  .index{display:none}
+  .tabs{display:flex;position:sticky;top:0;z-index:20;overflow-x:auto;scrollbar-width:none;background:var(--th-panel);margin:0 calc(var(--gut) * -1) 6px;padding:10px var(--gut);border-bottom:1.5px solid var(--th-ink)}
+  .tabs a{flex:none;text-decoration:none;font:600 13.5px/1 var(--sans);color:var(--th-ink-2);padding:9px 11px}
+  .tabs a.on{background:var(--th-action);color:var(--th-action-ink)}
+  .head{grid-template-columns:minmax(0,1fr)}
+  .head .tb{margin-top:26px}
+  :root{--hang:72px}
+  h2 .no{font-size:44px}
+}
+@media (max-width:640px){
+  :root{--gut:16px;--hang:0px}
+  body{font-size:17px}
+  h1{font-size:34px}
+  .lede{font-size:18px}
+  .text-l{font-size:19px}
+  .text-xl{font-size:21px}
+  h2{grid-template-columns:auto minmax(0,1fr);gap:14px;margin-top:64px}
+  h2 .no{font-size:36px}
+  h2 .sht{display:none}
+  .verdict{grid-template-columns:minmax(0,1fr)}
+  .verdict .vm{padding:18px 18px 0;display:flex;align-items:flex-end;gap:14px}
+  .verdict .vm small{max-width:none;margin:0 0 6px}
+  .verdict .vm span{font-size:84px}
+  .verdict>div:last-child{padding:12px 18px 20px}
+  .verdict .big{font-size:20px}
+  .fb{padding:16px 12px 18px}
+  .fh{flex-wrap:wrap;gap:4px 12px}
+  .fh .id{min-width:0}
+  .lane{grid-template-columns:minmax(0,1fr)}
+  .radar-wrap{grid-template-columns:minmax(0,1fr)}
+  .cmp{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cmp .rk{grid-column:1/-1;border-bottom:1px solid var(--th-line)}
+  .cmp .corner{display:none}
+  .totals div{grid-template-columns:100px 1fr 34px;gap:8px;font-size:13px}
+  .num{font-size:44px}
+}
+@media print{.index,.tabs,.toggle{display:none}.body{grid-template-columns:1fr}}
+
+.replay{padding-top:16px}
+.rbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:6px}
+.rbar button,.rchips button{all:unset;cursor:pointer;font:700 13px/1 var(--sans);padding:9px 12px;box-shadow:inset 0 0 0 1.5px var(--th-ink);background:var(--th-field);color:var(--th-ink)}
+.rbar button:hover,.rchips button:hover{background:var(--th-panel)}
+.rbar button:focus-visible,.rchips button:focus-visible{outline:2px solid var(--th-focus);outline-offset:2px}
+.rbar .rplay{background:var(--th-ink);color:var(--th-field);min-width:52px;text-align:center}
+.rbar .rplay:hover{background:var(--th-ink);opacity:.9}
+.rspeed{display:inline-flex}
+.rspeed button{box-shadow:inset 0 0 0 1.5px var(--th-line-strong);margin-left:-1.5px;font-family:var(--mono);font-weight:600}
+.rspeed button[aria-pressed="true"]{background:var(--th-struct);color:var(--th-struct-ink);box-shadow:inset 0 0 0 1.5px var(--th-struct)}
+.rleg{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px 16px;font:500 13px/1.2 var(--sans);color:var(--th-ink-2)}
+.rleg i{display:inline-block;width:20px;height:4px;margin-right:7px;vertical-align:3px}
+.rleg .lg-a{background:var(--th-action)} .rleg .lg-b{background:var(--th-alert)} .rleg .lg-d{background:var(--th-ok)} .rleg .lg-i{background:var(--th-line)}
+.rwrap{overflow-x:auto;scrollbar-width:thin}
+svg.rp{display:block;width:100%;min-width:960px;height:auto}
+.rp text{font-family:var(--sans);fill:var(--th-ink)}
+.rp .nm{font-size:15px;font-weight:700}
+.rp .sb{font-size:13px;fill:var(--th-ink-2)}
+.rp .panel{fill:var(--th-panel);stroke:var(--th-line);stroke-width:1}
+.rp .rb{fill:none;stroke:var(--th-line);stroke-width:3;stroke-linecap:round}
+.rp .rb.loop{stroke-dasharray:2 6}
+.rp .ro{fill:none;stroke-width:3.5;stroke-linecap:round;transition:stroke .3s}
+.rp .ro.st-idle{stroke:none}
+.rp .ro.st-active{stroke:var(--th-action)} .rp .ro.st-done{stroke:var(--th-ok)} .rp .ro.st-back{stroke:var(--th-alert)}
+.rp .nd .shape{fill:var(--th-field);stroke:var(--th-line-strong);stroke-width:2.5;transition:fill .3s,stroke .3s}
+.rp .nd.agent .shape{stroke:var(--th-struct);stroke-width:3.5}
+.rp .nd.ask .shape{stroke-dasharray:3 3}
+.rp .nd.bar .shape{fill:var(--th-ink);stroke:none}
+.rp .nd .pulse{fill:var(--th-action);opacity:0}
+.rp .nd .tick{fill:none;stroke:var(--th-ok-ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;display:none}
+.rp .nd.st-active .shape{stroke:var(--th-action);fill:var(--th-action-wash)}
+.rp .nd.bar.st-active .shape{fill:var(--th-action)}
+.rp .nd.st-done .shape{stroke:var(--th-ok);fill:var(--th-ok)}
+.rp .nd.bar.st-done .shape{fill:var(--th-ok)}
+.rp .nd.st-done .tick{display:block}
+.rp .nd.st-back .shape{stroke:var(--th-alert);fill:var(--th-field)}
+.rp .nd.st-active .ust{fill:var(--th-action-edge);font-weight:700}
+.rp .nd.st-done .ust{fill:var(--th-ok-text);font-weight:700}
+.rp .pill rect{fill:var(--th-field);stroke:var(--th-line-strong);stroke-width:1.2}
+.rp .pill text{font-size:13px;font-weight:700;fill:var(--th-ink-2)}
+.rp .pill.st-active rect{stroke:var(--th-action-edge)} .rp .pill.st-active text{fill:var(--th-action-edge)}
+.rp .pill.st-back rect{stroke:var(--th-alert)} .rp .pill.st-back text{fill:var(--th-alert)}
+.rp .pill.st-done rect{stroke:var(--th-ok)} .rp .pill.st-done text{fill:var(--th-ok-text)}
+.rp .cb rect{fill:var(--th-field);stroke:var(--th-ink);stroke-width:1.5}
+.rp .cb .tick{fill:none;stroke:var(--th-ok-ink);stroke-width:2;display:none}
+.rp .cb.on rect{fill:var(--th-ok);stroke:var(--th-ok)} .rp .cb.on .tick{display:block}
+.rp .human circle,.rp .human path{fill:var(--th-ink-3)}
+.rp .human.st-active circle,.rp .human.st-active path{fill:var(--th-action)}
+.rp .human.st-done circle,.rp .human.st-done path{fill:var(--th-ok)}
+.rp .tok rect{fill:var(--th-struct)}
+.rp .tok text{font:700 13px var(--mono);fill:var(--th-struct-ink)}
+.rp .tok.dot rect{x:-6px;y:-6px;width:12px;height:12px;rx:6px}
+.rp .tok.dot text{display:none}
+@media (prefers-reduced-motion:no-preference){
+  .rp .nd.st-active .pulse{animation:rpulse 1.4s ease-out infinite}
+}
+@keyframes rpulse{from{opacity:.45;transform:scale(1)}to{opacity:0;transform:scale(2.1)}}
+.rchips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
+.rchips button{display:inline-flex;align-items:center;gap:8px;box-shadow:inset 0 0 0 1px var(--th-line-strong)}
+.rchips button b{display:inline-grid;place-items:center;width:20px;height:20px;font:700 12px/1 var(--mono);background:var(--th-line);color:var(--th-ink)}
+.rchips button.past b{background:var(--th-ok);color:var(--th-ok-ink)}
+.rchips button.on{box-shadow:inset 0 0 0 2px var(--th-ink)}
+.rchips button.on b{background:var(--th-action);color:var(--th-action-ink)}
+.rchips span{font:500 13px var(--sans);color:var(--th-ink-3);margin-left:6px}
+.rlog{list-style:none;margin:16px 0 0;padding:0;border-top:1.5px solid var(--th-ink);height:calc(6 * 31px);overflow-y:auto;scrollbar-width:thin;font:13px/1.3 var(--mono)}
+.rlog li{display:grid;grid-template-columns:64px 128px minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:8px 2px;border-bottom:1px solid var(--th-line);margin:0}
+.rlog time{color:var(--th-ink-3)}
+.rlog b{font-weight:600}
+.rlog span{color:var(--th-ink-2);font-family:var(--sans);font-size:14px}
+.rlog em{font-style:normal;font-weight:600;text-align:right;white-space:nowrap}
+.rlog li.ok em{color:var(--th-ok-text)} .rlog li.run em{color:var(--th-action-edge)} .rlog li.back em{color:var(--th-alert)}
+.rlog li:last-child{background:var(--th-panel)}
+.around{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:22px;border-top:1.5px solid var(--th-ink);padding-top:10px}
+.around h4{grid-column:1/-1;margin:0;color:var(--th-ink-3)}
+.around div{font-size:14px;color:var(--th-ink-2);line-height:1.45}
+.around div b{display:block;color:var(--th-ink);font-size:15px;margin-bottom:2px}
+.rnote{font-size:14px;color:var(--th-ink-2);margin:14px 0 0}
+@media (max-width:640px){
+  .rleg{margin-left:0}
+  .rlog li{grid-template-columns:56px minmax(0,1fr);gap:2px 10px}
+  .rlog li span,.rlog li em{grid-column:2;text-align:left}
+  .rlog{height:calc(5 * 62px)}
+  .around{grid-template-columns:minmax(0,1fr)}
+}
+.rp .nd.rt .shape{stroke:var(--th-idle);stroke-width:3}
+.rp .nd.opt .shape{stroke-dasharray:4 3;fill:transparent}
+.rp .nd.kit .shape{fill:var(--th-struct-2);stroke:var(--th-struct-2)}
+.rp .nd.gate .shape{stroke:var(--th-ink);stroke-width:2.5}
+.rp .nd.you .shape{fill:var(--th-ink-3);stroke:none}
+.rp .nd.you.st-active .shape{fill:var(--th-action);stroke:none}
+.rp .nd.you.st-done .shape{fill:var(--th-ok);stroke:none}
+.rp .nd.hub .shape{stroke-width:4}
+.rp .nd.hub.agent .shape{stroke:var(--th-struct);fill:var(--th-struct)}
+.rp .nd.hub.hot .shape{stroke:var(--th-alert)}
+.rp .nd.hub.hot.st-back .shape{fill:var(--th-alert)}
+.rp .nd.hub .tick{stroke-width:3}
+.rp .nd.hub.agent.st-active .shape{stroke:var(--th-action);fill:var(--th-struct)}
+.rp .lh{font:700 12.5px var(--sans);letter-spacing:.06em;fill:var(--th-ink)}
+.rp .lhb{fill:var(--th-ink)}
+.rp .lhl{font:800 14px var(--sans);fill:var(--th-field)}
+.rleg svg.kg{display:inline-block;width:18px;min-width:0;height:18px;vertical-align:-4px;margin-right:6px;overflow:visible}
+.rleg svg.kg .nd .shape{stroke-width:2.5}
+.rleg>span{white-space:nowrap}
+.rp .nd.st-active .shape{stroke:var(--th-action);fill:var(--th-action-wash)}
+.rp .nd.st-done .shape{stroke:var(--th-ok);fill:var(--th-ok)}
+.rp .nd.st-back .shape{stroke:var(--th-alert);fill:var(--th-field)}
+.rp .nd.bar.st-active .shape{fill:var(--th-action);stroke:none}
+.rp .nd.bar.st-done .shape{fill:var(--th-ok);stroke:none}
+.rp .ar{fill:var(--th-line-strong);transition:fill .3s}
+.rp .ar.st-active{fill:var(--th-action)} .rp .ar.st-done{fill:var(--th-ok)} .rp .ar.st-back{fill:var(--th-alert)}
+.verdict .vm small{display:block;font:700 12px/1.25 var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-top:14px;color:var(--th-struct-ink);opacity:.9;max-width:14ch}
+
+.read-l body{font-size:20px;line-height:1.58}
+.read-l .lede{font-size:22px}
+.read-l .text-l{font-size:22px;line-height:1.52}
+.read-l .text-xl{font-size:25px;line-height:1.45}
+@media (max-width:640px){.read-l body{font-size:18px}.read-l .lede,.read-l .text-l{font-size:20px}.read-l .text-xl{font-size:22px}}
+.body-franklin body{font-family:"Libre Franklin",var(--sans)}
+.body-schibsted body{font-family:"Schibsted Grotesk",var(--sans)}
+.totals s{width:calc(var(--v) / var(--max, 55) * 100%)}
+.totals.counts s{background-image:none}
+.totals div{grid-template-columns:150px 1fr minmax(44px,max-content)}
+@media (max-width:640px){.totals div{grid-template-columns:100px 1fr minmax(34px,max-content)}}
+figure.wide .fh::after{content:"scroll"}
+@media print{
+  .js .totals:not(.live) s{transform:none;transition:none}
+  .js .sch:not(.drawn) .wires path.w{stroke-dashoffset:0;transition:none}
+  .js .sch:not(.drawn) .wl{opacity:1;transition:none}
+  .rbar button,.rchips,figure.wide .fh::after{display:none}
+  figure,tr,.totals,.verdict{break-inside:avoid}
+  h2,h3{break-after:avoid}
+}
+h1 em{background:linear-gradient(var(--th-action),var(--th-action)) 0 50%/100% .9em no-repeat}
+.head .meta{grid-column:1/-1;margin:22px 0 0;display:flex;flex-wrap:wrap;gap:0 32px}
+.head .meta>div{flex:1 1 auto;min-width:0;border-top:1px solid var(--th-line);padding:9px 0 10px}
+.head .meta dt{font:700 12px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--th-ink-3)}
+.head .meta dd{margin:3px 0 0;font:500 15px/1.4 var(--sans)}
+main>.tabs+section>h2:first-child{margin-top:34px}
+
+</style>
+</head>
+<body>
+<div class="frame">
+<header class="head">
+<div class="ttl">
+<h1>freshtime: two time tools, <em>one contract</em></h1>
+<p class="lede">How freshtime-core, freshtime-intf, freshtime-agnt and pi-time fit together on branch <code>feat/pi-time-poc</code>, what the six test layers show, and what to build next.</p>
+</div>
+<dl class="tb">
+<div class="wide"><dt>Project</dt><dd><code>freshtime</code></dd></div>
+<div><dt>Date</dt><dd>2026-10-22</dd></div><div><dt>Status</dt><dd>Draft</dd></div>
+<div><dt>Branch</dt><dd><code>feat/pi-time-poc</code></dd></div><div><dt>Commit</dt><dd><code>e9ef5f7</code></dd></div>
+<div class="wide"><dt>View</dt><dd><button class="toggle" type="button" aria-pressed="false"><i></i><span>Light</span></button></dd></div>
+</dl>
+<dl class="meta"><div><dt>For</dt><dd>Jeremy Roethel, project owner.</dd></div><div><dt>State</dt><dd>branch <code>feat/pi-time-poc</code> at commit <code>e9ef5f7</code>, 2026-10-22.</dd></div><div><dt>Numbers</dt><dd>Re-run for this page on 2026-10-22, except the replay and end-to-end suites, which are read from their latest results (Section 06).</dd></div><div><dt>Background</dt><dd>The "Two tools, one contract" and "Gaps" sections of the October 2026 memory-systems research page on time coverage.</dd></div><div><dt>Content master</dt><dd><code>docs/content/freshtime-design/content.md</code>.</dd></div></dl>
+</header>
+<div class="body">
+<nav class="index" aria-label="Contents"><div class="ih"><span>Contents</span><span>10</span></div><a href="#s1"><b>01</b><span>Architecture</span></a><a href="#s2"><b>02</b><span>freshtime-core: the contract</span></a><a href="#s3"><b>03</b><span>freshtime-intf: temporal intent</span></a><a href="#s4"><b>04</b><span>freshtime-agnt: the freshness ledger</span></a><a href="#s5"><b>05</b><span>pi-time</span></a><a href="#s6"><b>06</b><span>Tests</span></a><a href="#s7"><b>07</b><span>Progress</span></a><a href="#s8"><b>08</b><span>What's next</span></a><a href="#s9"><b>09</b><span>What's after</span></a><a href="#s10"><b>10</b><span>Risks and limits</span></a></nav>
+<main>
+<nav class="tabs" aria-label="Sections"><a href="#s1">01 Architecture</a><a href="#s2">02 freshtime-core</a><a href="#s3">03 freshtime-intf</a><a href="#s4">04 freshtime-agnt</a><a href="#s5">05 pi-time</a><a href="#s6">06 Tests</a><a href="#s7">07 Progress</a><a href="#s8">08 What&#x27;s next</a><a href="#s9">09 What&#x27;s after</a><a href="#s10">10 Risks and limits</a></nav>
+<div class="verdict"><div class="vm" aria-hidden="true"><span>A</span><small>The answer</small></div><div>
+<p class="big"><b>freshtime is two small time tools that share one contract, and on the synthetic test the pair shows every fact with the right status and nothing false as true, which neither tool does alone.</b></p>
+<p>freshtime-intf reads which time a question is about: now, a past date, a span, the future, or a past date plus what changed since. freshtime-agnt keeps dated facts from project docs, knows when each one goes stale, and re-reads the source before it shows a stale fact as current. pi-time is pi launched with both tools in its own agent directory, over a ledger built from project docs.</p>
+<p>The 1+1=3 test runs seven questions under four setups: no tools, intent only, ledger only, and both. Status accuracy adds up: from a 36% baseline, intent alone gains 43 points, the ledger alone 21, and both together 64, so the interaction term is 0.00. Harm falls by more than the sum: intent alone removes 2 of the 4 false-as-true facts, the ledger alone removes none, and both together remove all 4, an interaction of -2. With a fresh ledger per question the pair spends 9 source re-reads where the ledger alone spends 24. The fixtures are synthetic, so this shows the mechanism and not a rate on real data. On 21 contrived questions Jev reads 9 of the 10 traps that fool the rules, where the rules read none, so Jev's value on real questions still waits on the blind set in #1.</p>
+<p class="revnote">A fresh session works the open issues in the order in Section 08, starting with #12, gated by the suites, and #1 waits on about 50 blind questions from you.</p>
+</div></div>
+<section id="s1">
+<h2><span class="no">01</span><span class="t">Architecture</span><span class="sht">01 / 10</span></h2>
+<p>A question passes through the four parts in one direction. freshtime-core holds the contract and the plumbing both tools share: the types, the SQLite schema, the trace writer, the clock and the Jev client. freshtime-intf turns a prompt plus conversation state into a <code>TemporalIntent</code>. freshtime-agnt reads the ledger at the time that intent names and re-checks stale facts against their source files. pi-time wires both into pi through one extension: a hook reads every prompt, and four tools expose the pair to the model.</p>
+<p>Jev sits inside freshtime-intf as an optional judge, and a rule-based fallback answers whenever Jev is off or fails. Every parse, ingest, read and maintenance pass writes a row to the traces table inside the same ledger file.</p>
+<figure>
+<div class="fh"><span class="id">Fig 1</span><span class="tt">One question through the four parts</span></div>
+<div class="fb replay" data-replay><script type="application/json">{"vb": [1000, 470], "token": "q1", "rows": 13, "deco": [["rect", {"class": "panel", "x": 10, "y": 40, "width": 190, "height": 270}], ["text", {"class": "lh", "x": 22, "y": 60}, "pi-time"], ["rect", {"class": "panel", "x": 215, "y": 40, "width": 300, "height": 300}], ["text", {"class": "lh", "x": 227, "y": 60}, "freshtime-intf"], ["rect", {"class": "panel", "x": 615, "y": 40, "width": 280, "height": 300}], ["text", {"class": "lh", "x": 627, "y": 60}, "freshtime-agnt"], ["rect", {"class": "panel", "x": 215, "y": 365, "width": 760, "height": 95}], ["text", {"class": "lh", "x": 227, "y": 385}, "freshtime-core"]], "kinds": [["you", "you"], ["check", "code"], ["agent", "Jev judgment"], ["kit", "the contract"], ["opt", "fallback"]], "stations": {"you": {"k": "you", "x": 50, "y": 170, "nm": "prompt", "sb": null, "at": "below"}, "hook": {"k": "check", "x": 150, "y": 170, "nm": "hook", "sb": "before_agent_start", "at": "below"}, "cand": {"k": "check", "x": 270, "y": 170, "nm": "candidates", "sb": ["chrono-node", "and code math"], "at": "below"}, "jev": {"k": "agent", "x": 400, "y": 105, "nm": "Jev", "sb": "picks labels only", "at": "above"}, "fb": {"k": "opt", "x": 400, "y": 245, "nm": "fallback rules", "sb": "on any Jev error", "at": "below"}, "intent": {"k": "kit", "x": 560, "y": 170, "nm": "TemporalIntent", "sb": "the contract", "at": "above"}, "read": {"k": "check", "x": 690, "y": 170, "nm": "ledger read", "sb": ["FTS5,", "status by mode"], "at": "above"}, "src": {"k": "check", "x": 820, "y": 270, "nm": "re-check source", "sb": "needs_check facts only", "at": "below"}, "ans": {"k": "bar", "x": 960, "y": 170, "nm": "answer", "sb": "a status per fact", "at": "below-end"}, "db": {"k": "kit", "x": 690, "y": 410, "nm": "ledger.db", "sb": "facts, checks, sources, traces", "at": "right"}}, "edges": {"e0": "M50,170H150", "e1": "M150,170H270", "ej": "M270,170H320C345,170 345,105 370,105H400", "ef": "M270,170H320C345,170 345,245 370,245H400", "jv": "M400,105H430C460,105 460,170 490,170H560", "fv": "M400,245H430C460,245 460,170 490,170H560", "e3": "M560,170H690", "rd": "M690,170V410", "rs": "M690,170H740C780,170 780,270 820,270", "e4": "M690,170H960", "tw": "M560,170V370Q560,410 600,410H690"}, "loops": ["ef", "fv"], "both": ["rd", "rs"], "pills": {"tw": {"edge": "tw", "f": 0.82, "t": "trace rows"}, "rd": {"edge": "rd", "f": 0.55, "t": "both ways"}}, "steps": [{"dur": 1000, "log": ["you", "\"What is the next step for alpha now?\"", "[prompt]", "run"], "after": {"e": {"e0": "done"}, "n": {"you": "done", "hook": "active"}}, "move": ["e0"], "chip": "Prompt"}, {"dur": 900, "log": ["pi-time", "before_agent_start asks for a reading", "[hook]", "run"], "after": {"e": {"e1": "done"}, "n": {"hook": "done", "cand": "active"}}, "move": ["e1"]}, {"dur": 800, "log": ["intf", "chrono-node finds no date phrase", "0 candidates [ok]", "ok"], "after": {"n": {"cand": "done"}}}, {"dur": 1100, "log": ["Jev", "one batched call: which mode, and is this about right now", "current, now yes [jev ok]", "ok"], "after": {"e": {"ej": "done"}, "n": {"jev": "done"}}, "move": ["ej"], "chip": "Reading", "during": {"n": {"jev": "active"}}}, {"dur": 1000, "log": ["intf", "code applies the guards and builds the reading", "current, default basis [reading]", "ok"], "after": {"e": {"jv": "done"}, "n": {"intent": "done"}}, "move": ["jv"]}, {"dur": 1100, "log": ["pi-time", "reading goes into the system prompt and the status line, the model calls freshtime_ask", "[tool call]", "run"], "after": {"e": {"e3": "done"}, "n": {"read": "active"}}, "move": ["e3"], "chip": "Read"}, {"dur": 1000, "log": ["agnt", "text match over the facts, 4 are past their shelf life", "4 [needs_check]", "run"], "after": {"e": {"rd": "done"}, "n": {"db": "done"}}, "move": ["rd"]}, {"dur": 1200, "log": ["agnt", "re-reads their source files and re-ingests the changed ones", "2 of 4 [changed]", "back"], "after": {"e": {"rs": "back"}, "n": {"src": "back"}}, "move": ["rs"], "during": {"n": {"src": "active"}}}, {"dur": 1100, "log": ["agnt", "retrieves again after the re-ingest ran the replacement rules", "[current, replaced]", "ok"], "after": {"e": {"rs": "done"}, "n": {"src": "done", "read": "done"}}, "move": ["rs"], "rev": true}, {"dur": 900, "log": ["core", "intf.parse and agnt.read write their trace rows", "[traced]", "ok"], "after": {"e": {"tw": "done"}}, "move": ["tw"]}, {"dur": 1200, "log": ["answer", "alpha launched is current, the older Next: lines are replaced", "6 current, 2 replaced [statuses]", "ok"], "after": {"e": {"e4": "done"}, "n": {"ans": "done"}}, "move": ["e4"], "chip": "Answer"}], "label": "A question replayed through pi-time, freshtime-intf and freshtime-agnt: the hook reads the prompt, code finds date phrases, Jev picks the labels, the TemporalIntent goes to the ledger read, stale facts are re-read from their source files, trace rows go to the ledger file, and the answer returns with a status per fact."}</script></div>
+<figcaption>An example run of the first question in the synthetic script, "What is the next step for alpha now?". The Jev step and the statuses follow the end-to-end run, where Jev read the question as current at confidence 0.98 and the answer held 6 current and 2 replaced facts. The re-read counts follow the ablation with the ledger carried, where the same question re-read 4 facts and caught 2 changes. The fallback path is drawn dotted because this run used Jev. The log times are the replay's clock, not measured latency.</figcaption>
+</figure>
+</section>
+<section id="s2">
+<h2><span class="no">02</span><span class="t">freshtime-core: the contract</span><span class="sht">02 / 10</span></h2>
+<p>The contract is two records. intf produces a <code>TemporalIntent</code>, agnt consumes it and returns LedgerFacts, and dates are ISO calendar dates with no time zone.</p>
+<h3>TemporalIntent</h3>
+<p>The intent carries seven fields.</p>
+<div class="tbl"><table><thead><tr><th>Field</th><th>Values</th><th>What it carries</th></tr></thead><tbody><tr><td class="k"><code>asof_mode</code></td><td>current, past, range, future, mixed, none</td><td>Which time the answer is about.</td></tr><tr><td class="k"><code>anchor</code></td><td>start, end and the words it came from, or null</td><td>The date or span. A point has start equal to end.</td></tr><tr><td class="k"><code>basis</code></td><td>stated, inherited, default</td><td>Said in this question, carried from earlier, or now.</td></tr><tr><td class="k"><code>kinds</code></td><td>a subset of the twelve kinds of time</td><td>Which kinds the question needs.</td></tr><tr><td class="k"><code>confidence</code></td><td>0 to 1</td><td>From Jev, or 0.6 on the rules.</td></tr><tr><td class="k"><code>path</code></td><td>jev, fallback, manual</td><td>Who made the reading, so a silent Jev failure shows.</td></tr><tr><td class="k"><code>query</code></td><td>the question with its time phrases removed</td><td>The text used for retrieval.</td></tr></tbody></table></div>
+<h3>LedgerFact</h3>
+<p>A fact carries four clocks and three freshness fields.</p>
+<div class="tbl"><table><thead><tr><th>Group</th><th>Fields</th><th>Meaning</th></tr></thead><tbody><tr><td class="k">Identity</td><td><code>id</code>, <code>project</code>, <code>section</code>, <code>text</code>, <code>source_path</code></td><td>One bullet or entry, where it lives.</td></tr><tr><td class="k">Class</td><td><code>kind</code></td><td>Volatility class: identity, preference, decision or status.</td></tr><tr><td class="k">Clocks</td><td><code>valid_at</code>, <code>invalid_at</code>, <code>recorded_at</code>, <code>source_at</code></td><td>True from, true until, learned on, file date.</td></tr><tr><td class="k">Freshness</td><td><code>last_verified_at</code>, <code>verified_by</code>, <code>last_accessed_at</code></td><td>Last confirmed, by whom, last read.</td></tr><tr><td class="k">Read view</td><td><code>status</code></td><td>current, replaced, <code>needs_check</code> or <code>current_then</code>, set at read time.</td></tr></tbody></table></div>
+<h3>Statuses and shelf lives</h3>
+<div class="tbl"><table><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody><tr><td class="k"><code>current</code></td><td>Still true as far as the source shows.</td></tr><tr><td class="k"><code>replaced</code></td><td>A newer line or a re-read closed it. Never shown as current.</td></tr><tr><td class="k"><code>needs_check</code></td><td>Past its shelf life and not confirmed by a re-read.</td></tr><tr><td class="k"><code>current_then</code></td><td>True at the past date or span the question asks about.</td></tr></tbody></table></div>
+<p>Shelf lives are hand-set per class: status 7 days, decision 90, preference 365, identity never. A ponytail comment in the contract marks them for fitting from verification outcomes.</p>
+<h3>SQLite schema</h3>
+<p>The SQLite schema has five tables in one file, opened in WAL mode at <code>~/.freshtime/ledger.db</code> unless <code>FRESHTIME_DB</code> names another.</p>
+<p>The schema is five tables.</p>
+<div class="tbl"><table><thead><tr><th>Table</th><th>Holds</th></tr></thead><tbody><tr><td class="k"><code>facts</code></td><td>One row per fact, unique on source path, section and text.</td></tr><tr><td class="k"><code>facts_fts</code></td><td>FTS5 index over project, section and text, filled by an insert trigger.</td></tr><tr><td class="k"><code>checks</code></td><td>One row per re-read: the fact, its age in days, whether it changed, and why.</td></tr><tr><td class="k"><code>sources</code></td><td>One row per source file: its hash and when it was last ingested.</td></tr><tr><td class="k"><code>traces</code></td><td>One row per tool call: tool, input, output, path, milliseconds and any error.</td></tr></tbody></table></div>
+<h3>Traces, clock and the Jev client</h3>
+<p>Traces clip each input and output to 2,000 characters, and the newest rows feed <code>/freshtime</code> and the trace command line. <code>FRESHTIME_NOW</code> pins the clock, which is how tests, the replay and the end-to-end suite set dates.</p>
+<p>The Jev client is one fetch to the TypeSafe System One endpoint, with the model pinned to <code>jev-1.13.0</code> unless <code>FRESHTIME_JEV_MODEL</code> says otherwise. It is on only when <code>TYPESAFE_API_KEY</code> is set and <code>FRESHTIME_JEV</code> is not off, and it throws on any failure instead of guessing, because every caller has a fallback. Jev answers two question types: a choice among labels with a confidence, and a yes-or-no probability.</p>
+</section>
+<section id="s3">
+<h2><span class="no">03</span><span class="t">freshtime-intf: temporal intent</span><span class="sht">03 / 10</span></h2>
+<h3>Candidates in code, judgments by Jev</h3>
+<p>Code finds the candidates and does every date sum, and Jev only picks labels. <code>chrono-node</code> finds date phrases against the session clock. Code then turns "last week" or "next month" into Monday-to-Sunday weeks or whole months, widens a bare month to its full span, and merges "between X and Y" into one range.</p>
+<p>The rules pick the mode from the candidate and a few word lists. A stated date in the future, or a future word, reads as future. "Since" or "what changed" reads as mixed. A span reads as range, and a single date as past. With no date, a now word reads as current, then a held as-of is inherited, then a future word reads as future. Anything else is none.</p>
+<p>When Jev is on, one batched call asks up to four questions: which mode, whether the question is about now, which candidate phrase sets the time, and, when an as-of is held, whether this question changes the period. A choice counts only at confidence 0.5 or more, and a yes only at probability 0.5 or more. Jev never writes a date. It picks one of the candidates code found, or none. On any Jev error the rule reading stands and the error is stored on the intent and in the trace row.</p>
+<h3>Ambient as-of</h3>
+<p>The ambient as-of is the period a conversation is in. A stated past date, span or since-question sets it. A follow-up with no date inherits it. A new stated period replaces it. A current reading clears it: on the rules that takes "now", "currently" or "today", and on the Jev path Jev's own now judgment. A Jev yes to "does this change the period" also clears it, and <code>/freshtime asof</code> sets or clears it by hand.</p>
+<h3>Guards and Jev&#x27;s now judgment</h3>
+<p>Live Jev failures shaped how Jev and the rules combine. An inherited reading is kept: Jev's mode choice alone cannot drop it, and only the "does this change the period" judgment can. Live Jev had read the follow-up "And the next step for alpha?" as future, because of the word "next". A second guard once let an explicit now word override Jev's mode, after live Jev read "What is the next step for alpha now?" as future. The probe then showed that guard threw away three of Jev's right answers, such as "Was that still true at the time?", which has "still" and is about the past. Since commit <code>e9ef5f7</code>, on the Jev path "is this about right now?" is Jev's own judgment, and the keywords decide only on the fallback path. Jev still reads "next step" as future at 0.9 confidence while its own now judgment says now at 0.8, and the combination follows the now judgment.</p>
+<figure>
+<div class="fh"><span class="id">Fig 2</span><span class="tt">Ambient as-of across a four-turn conversation</span></div>
+<div class="fb replay" data-replay><script type="application/json">{"vb": [1000, 270], "token": "as-of", "rows": 7, "kinds": [["rt", "as-of state"], ["gate", "guard"]], "stations": {"s0": {"k": "rt", "x": 40, "y": 90, "nm": "no as-of", "sb": "ambient is null", "at": "above-start"}, "s1": {"k": "rt", "x": 270, "y": 90, "nm": "set", "sb": ["2026-10-14", "stated past"], "at": "above"}, "s2": {"k": "rt", "x": 480, "y": 90, "nm": "inherited", "sb": ["2026-10-14", "follow-up with no date"], "at": "above"}, "s3": {"k": "rt", "x": 690, "y": 90, "nm": "replaced", "sb": ["2026-09-01..2026-09-30", "stated range"], "at": "above"}, "s4": {"k": "rt", "x": 940, "y": 90, "nm": "cleared", "sb": "ambient is null", "at": "above-end"}, "g1": {"k": "gate", "x": 375, "y": 230, "nm": "guard", "sb": "Jev's mode cannot drop it", "at": "right"}, "g2": {"k": "gate", "x": 815, "y": 230, "nm": "now judgment", "sb": ["Jev's on the Jev path,", "a now word on the rules"], "at": "right"}}, "edges": {"a1": "M40,90H270", "a2": "M270,90H480", "a3": "M480,90H690", "a4": "M690,90H940", "back": "M940,90V170H40V90", "gl1": "M375,230V102", "gl2": "M815,230V102"}, "loops": ["back", "gl1", "gl2"], "pills": {"a1": {"x": 155, "y": 90, "t": "stated past date"}, "a2": {"x": 375, "y": 90, "t": "no date"}, "a3": {"x": 585, "y": 90, "t": "new stated period"}, "a4": {"x": 815, "y": 90, "t": "now word"}, "back": {"x": 600, "y": 170, "t": "/freshtime asof clear"}}, "steps": [{"dur": 1200, "log": ["turn 1", "\"As of Oct 14, what was the plan for orchard?\"", "stated past [set]", "ok"], "after": {"e": {"a1": "done"}, "n": {"s0": "done", "s1": "active"}}, "move": ["a1"], "chip": "Set"}, {"dur": 1200, "log": ["turn 2", "\"and the next step for orchard?\"", "no date, inherited [kept]", "ok"], "after": {"e": {"a2": "done"}, "n": {"s1": "done", "s2": "active"}}, "move": ["a2"], "chip": "Inherit"}, {"dur": 1000, "log": ["guard", "Jev's mode choice alone cannot drop an inherited reading", "[kept]", "ok"], "after": {"e": {"gl1": "done"}, "n": {"g1": "done"}}, "move": ["gl1"], "during": {"n": {"g1": "active"}}}, {"dur": 1200, "log": ["turn 3", "\"and in September, what was the plan for orchard?\"", "stated range [replaced]", "run"], "after": {"e": {"a3": "done"}, "n": {"s2": "done", "s3": "active"}}, "move": ["a3"], "chip": "Replace"}, {"dur": 1200, "log": ["turn 4", "\"what is the orchard plan now?\"", "now word, current [cleared]", "ok"], "after": {"e": {"a4": "done"}, "n": {"s3": "done", "s4": "active"}}, "move": ["a4"], "chip": "Clear"}, {"dur": 1000, "log": ["now", "on the Jev path Jev's own now judgment decides, on the rules a now word does", "[current]", "ok"], "after": {"e": {"gl2": "done"}, "n": {"g2": "done", "s4": "done"}}, "move": ["gl2"], "during": {"n": {"g2": "active"}}}], "label": "Five as-of states in a row, no as-of, set to 2026-10-14, inherited 2026-10-14, replaced by September 2026, and cleared, with the transition rule on each line, the inherit guard, and the now judgment on the clear step."}</script></div>
+<figcaption>The asof kinds test, replayed. Turn 1 states a date and sets the as-of, turn 2 inherits it, turn 3 states a new period and replaces it, and turn 4 asks about now and clears it. The diamonds are the inherit guard and the now judgment, and the dotted line back to the start is the hand reset with <code>/freshtime asof clear</code>.</figcaption>
+</figure>
+</section>
+<section id="s4">
+<h2><span class="no">04</span><span class="t">freshtime-agnt: the freshness ledger</span><span class="sht">04 / 10</span></h2>
+<h3>Sources, extraction and dating</h3>
+<p>Sources are <code>whats_next.md</code>, <code>HANDOFF.md</code>, <code>docs/handoffs/*.md</code> and <code>learning_guide*.html</code> under <code>~/create</code> and <code>~/repos</code>, at most four folders deep, skipping dot folders and <code>node_modules</code>. <code>FRESHTIME_ROOTS</code> replaces the two roots.</p>
+<p>Markdown extraction takes each bullet or checkbox line of 12 characters or more outside code fences, under its nearest heading. Learning guides give one fact per definition term and per first table cell, under their section heading. A fact's project is the folder that holds its file, or the repo root for <code>docs/handoffs</code>.</p>
+<p>Dating follows the nearest date the author wrote. In markdown that is the nearest dated heading, then a date prefix on the filename, then the file's modified date. In a learning guide it is the section heading's date, then the last date in the title, then the modified date. At ingest, <code>last_verified_at</code> is the author's date and <code>verified_by</code> is author, because reading a line is not checking it. Jev classifies each new line into a volatility class in batches of 40, and a keyword rule takes over on error.</p>
+<h3>Replacement rules</h3>
+<p>Four replacement rules close a fact at ingest.</p>
+<p>The rules carry these letters in the code.</p>
+<div class="tbl"><table><thead><tr><th>Rule</th><th>Closes</th><th>When</th><th>Closed at</th></tr></thead><tbody><tr><td class="k">(a)</td><td>An open checkbox</td><td>The same text appears checked in the same file.</td><td>The checked line's date</td></tr><tr><td class="k">(b)</td><td>A <code>Next:</code> line</td><td>Its successor in the project: the next later-dated one, or the next one lower in the same file on the same day.</td><td>The successor's date</td></tr><tr><td class="k">(c)</td><td>Any line</td><td>It is gone from its file on re-read.</td><td>The day it was found gone</td></tr><tr><td class="k">(d)</td><td>A state-like section of a handoff</td><td>A later-dated handoff of the same project has the same section (State, Next step, Recent artifacts and similar).</td><td>The later handoff's date</td></tr></tbody></table></div>
+<p>A removed line that comes back is reopened, and the gap between removal and return is not kept.</p>
+<h3>Verification, reads and maintain</h3>
+<p>Verification is a re-read of the source file. If the file's hash changed since the last ingest, the file is re-ingested first so the replacement rules run. The fact is verified when its line is still there and no rule closed it: <code>last_verified_at</code> moves to today and <code>verified_by</code> to source. Otherwise it is closed today. Every re-read writes a checks row with the fact's age and whether it changed, which is the data shelf-life fitting needs.</p>
+<p>Each read takes a text-match pool five times the limit, then prefers live facts and newer ones. The status depends on the mode.</p>
+<p>Three read shapes cover the six modes.</p>
+<div class="tbl"><table><thead><tr><th>Mode</th><th>Facts returned</th><th>Status</th><th>Re-reads</th></tr></thead><tbody><tr><td class="k">current, none, future</td><td>All matches</td><td><code>replaced if closed, needs_check if past shelf life, else current</code></td><td><code>needs_check</code> facts</td></tr><tr><td class="k">past, range</td><td>Valid on or before the anchor's end and not closed before its start</td><td><code>current_then</code></td><td>None</td></tr><tr><td class="k">mixed</td><td>The past set at the anchor, plus live facts dated after it</td><td><code>current_then for the past set, current rules for the rest</code></td><td>The newer facts only</td></tr></tbody></table></div>
+<p>When a re-read catches a change, the read runs once more without re-reading, so facts the re-ingest added can answer. Maintain re-checks stale live facts up to a budget, most recently read first, then the longest unconfirmed.</p>
+<figure>
+<div class="fh"><span class="id">Fig 3</span><span class="tt">One fact from ingest to replacement</span></div>
+<div class="fb replay" data-replay><script type="application/json">{"vb": [1000, 330], "token": "fact", "rows": 6, "kinds": [["check", "code step"], ["rt", "state"]], "stations": {"ing": {"k": "check", "x": 50, "y": 150, "nm": "ingest", "sb": ["2026-10-13,", "valid 2026-10-06"], "at": "below-start"}, "cur": {"k": "rt", "x": 230, "y": 150, "nm": "current", "sb": ["verified by author", "2026-10-06"], "at": "below"}, "stale": {"k": "rt", "x": 420, "y": 150, "nm": "needs_check", "sb": ["16 days, status", "shelf life 7"], "at": "below"}, "rr": {"k": "check", "x": 600, "y": 150, "nm": "re-read source", "sb": ["hash changed,", "re-ingest"], "at": "below"}, "ver": {"k": "rt", "x": 800, "y": 50, "nm": "verified", "sb": ["verified_by source,", "clock reset"], "at": "right"}, "rep": {"k": "rt", "x": 800, "y": 150, "nm": "replaced", "sb": ["closed 2026-10-15", "by rule (b)"], "at": "below"}, "ct": {"k": "rt", "x": 960, "y": 250, "nm": "current_then", "sb": "past read as of 2026-10-14", "at": "below-end"}}, "edges": {"e0": "M50,150H230", "e1": "M230,150H420", "e2": "M420,150H600", "rv": "M600,150C600,90 640,50 700,50H800", "vb": "M800,50V20H230V150", "rp": "M600,150H800", "pc": "M800,150H880C920,150 920,250 960,250"}, "loops": ["rv", "vb"], "pills": {"e1": {"x": 325, "y": 150, "t": "shelf life passes"}, "rv": {"x": 715, "y": 50, "t": "line present"}, "rp": {"x": 700, "y": 150, "t": "successor found"}}, "steps": [{"dur": 1100, "log": ["ingest", "alpha/whats_next.md read on 2026-10-13, author date 2026-10-06", "[current]", "ok"], "after": {"e": {"e0": "done"}, "n": {"ing": "done", "cur": "active"}}, "move": ["e0"], "chip": "Ingest"}, {"dur": 1100, "log": ["clock", "2026-10-22, 16 days since the author wrote it", "[needs_check]", "run"], "after": {"e": {"e1": "done"}, "n": {"cur": "done", "stale": "active"}}, "move": ["e1"], "chip": "Stale"}, {"dur": 1100, "log": ["agnt", "a now question re-reads the source, its hash changed", "[re-ingest]", "run"], "after": {"e": {"e2": "done"}, "n": {"stale": "done", "rr": "done"}}, "move": ["e2"], "chip": "Re-read"}, {"dur": 1200, "log": ["rule (b)", "the 2026-10-15 Next: is its successor", "closed 2026-10-15 [replaced]", "back"], "after": {"e": {"rp": "back"}, "n": {"rep": "back"}}, "move": ["rp"]}, {"dur": 1200, "log": ["read", "as of 2026-10-14 it was valid and not yet closed", "[current_then]", "ok"], "after": {"e": {"pc": "done"}, "n": {"ct": "done"}}, "move": ["pc"], "chip": "Past read"}], "label": "A fact moves from ingest to current, to needs_check after its shelf life, to a source re-read, and then to replaced. A dotted branch shows the verified path back to current, and a past read shows the same fact as current_then."}</script></div>
+<figcaption>The fixture fact "Next: alpha needs a load test before launch", written in the 2026-10-06 session and ingested on 2026-10-13. By 2026-10-22 it is past the 7-day status shelf life, the re-read finds a 2026-10-15 session appended, rule (b) closes it at its successor's date, and a past read as of 2026-10-14 still returns it as <code>current_then</code>. The verified branch is dotted because this fact changed.</figcaption>
+</figure>
+</section>
+<section id="s5">
+<h2><span class="no">05</span><span class="t">pi-time</span><span class="sht">05 / 10</span></h2>
+<h3>Launcher and agent directory</h3>
+<p>The launcher sets <code>PI_CODING_AGENT_DIR</code> to <code>pi-time/agent</code>, so pi-time keeps its own settings, sessions and extension apart from the user's pi. It links <code>auth.json</code> and fd from <code>~/.pi/agent</code> instead of copying them, installs <code>chrono-node</code> if it is missing, and starts pi with <code>--no-skills</code> so shared skills stay out. The agent settings pin provider zai, model <code>glm-5.3</code> and project trust never.</p>
+<h3>Tools, per-turn reading and status line</h3>
+<p>Four tools reach the model.</p>
+<div class="tbl"><table><thead><tr><th>Tool</th><th>Does</th></tr></thead><tbody><tr><td class="k"><code>freshtime_ask</code></td><td>Runs the pair: the turn's reading, the ledger read and the re-checks, a status per fact.</td></tr><tr><td class="k"><code>temporal_intent</code></td><td>Reads the time reference only, and updates the held as-of like a turn.</td></tr><tr><td class="k"><code>ledger_query</code></td><td>Reads the ledger with an explicit mode and anchor, to override the reading.</td></tr><tr><td class="k"><code>ledger_verify</code></td><td>Re-reads one fact's source and returns its status before and after.</td></tr></tbody></table></div>
+<p>Before each turn a hook parses the prompt, adds the reading and three rules to the system prompt, and updates the status line. The rules are to call <code>freshtime_ask</code> for project questions, say the reading back in one line, and never present a replaced or <code>needs_check</code> fact as current. The status line reads "ft &lt;facts&gt; facts | &lt;stale&gt; stale | reading: as of 2026-10-14 (inherited from earlier) | jev ok", and the last field turns to "jev FALLBACK n" after any Jev error in the session. <code>/freshtime</code> shows counts by status and class, the held as-of, the top projects, the last 10 traces and the remaining work. Its subcommands are ingest, maintain, asof and trace.</p>
+<h3>Startup and remaining work</h3>
+<p>On startup pi-time builds the ledger if it is empty, or re-ingests only the files whose hash changed, then lists remaining work. The list is the open GitHub issues, needs-input first, then <code>agent:todo</code>, then a count of ideas, with <code>REMAINING.md</code> as the offline fallback.</p>
+<h3>Observability and privacy</h3>
+<p>Every Jev failure is loud. The trace row keeps the error, the status line counts fallbacks, <code>/freshtime trace</code> marks the row ERROR, and the answer still arrives on the rules. A test hook, <code>FRESHTIME_TRACE_FILE</code>, writes each turn's reading and each <code>freshtime_ask</code> result as one JSON line. Without a terminal UI the extension also writes to stderr, and inside the UI it never does, because stderr lines tear the pi screen.</p>
+<p>The repo is public. The ledger lives outside it, and sessions, the auth link, the fd link, model store and trust file are gitignored. Fixtures are synthetic, replay reports hold counts and rates only, and issue bodies name engineering work, not corpus content.</p>
+<h3>On the real corpus</h3>
+<p>On today's corpus a build with keyword classes finds 70 source files, 13 of them learning guides, and 1,914 facts, of which 49 are replaced and 278 are past their shelf life. Keyword classes label most lines decision, so a build with Jev classes, as pi-time runs it, finds more status facts and more stale ones.</p>
+</section>
+<section id="s6">
+<h2><span class="no">06</span><span class="t">Tests</span><span class="sht">06 / 10</span></h2>
+<p>Six layers each answer a different question.</p>
+<p>Latest results by layer, with the run each came from below.</p>
+<div class="tbl"><table><thead><tr><th>Layer</th><th>Proves</th><th>Cannot prove</th><th>Latest result</th></tr></thead><tbody><tr><td class="k">Unit<span class="why"><code>npm test</code></span></td><td>Extraction, dating, the four rules, statuses, verify, maintain, the intent rules and fallback.</td><td>That the rules match how people write or ask.</td><td>22 pass (intf 9, agnt 13)</td></tr><tr><td class="k">Ablation<span class="why"><code>node test/ablation.ts</code></span></td><td>The mechanism: what each tool adds, and that the pair removes all harm on the script.</td><td>A rate on real data. Seven questions, three synthetic projects.</td><td>both 100% right status, 0 harm, 2 assertions pass</td></tr><tr><td class="k">Twelve kinds<span class="why"><code>npm run kinds</code></span></td><td>Which kinds of time are built, by a method per kind over generated git histories.</td><td>That a passing kind works on real docs.</td><td>25 pass, 11 todo, 0 fail, plus 2 generator tests</td></tr><tr><td class="k">Replay from git<span class="why"><code>npm run replay -- --jev</code></span></td><td>Dating and past reads against git truth on real history, and how well shelf lives predict change.</td><td>Over-reach by rule (d), and anything about questions.</td><td>recall 0.998, precision 1.0 without backdated lines</td></tr><tr><td class="k">End to end<span class="why"><code>npm run e2e -- --runs 2</code></span></td><td>Real pi and <code>glm-5.3</code> call the tools, read each turn right, and answer without harm.</td><td>Behavior beyond seven scripted turns, or a stable pass rate from 2 runs.</td><td>14 of 14 turns over 2 runs, fallback 7 of 7 answered</td></tr><tr><td class="k">Jev probe<span class="why"><code>npm run probe</code></span></td><td>Jev is not echoing the rules, because Jev never sees the rules' answer, and where the combination loses what Jev had right.</td><td>Accuracy. The 21 questions are contrived against the rules by design.</td><td>traps: rules 0 of 10, Jev 9, combined 9</td></tr></tbody></table></div>
+<h3>Where each number comes from</h3>
+<ul class="accent"><li><code>npm test</code> runs the unit, ablation and twelve-kinds tests offline: 62 tests, 51 pass, 0 fail and 11 todo, with Jev forced off in every test file. <code>whats_next.md</code> records 50 pass and 12 todo. The count moved because commit <code>5c375b9</code> dropped a todo marker on a test that had passed since the successor fix.</li><li>Unit, ablation, kinds, score and probe numbers were re-run on 2026-10-22 at 01:23 at commit <code>e9ef5f7</code>.</li><li>The end-to-end numbers come from <code>$TMPDIR/freshtime-e2e/2026-10-22T05-19-13-262Z</code>, whose results were written at 01:23, and the fallback numbers from the 04-55-19-266Z-fallback run, written at 00:56. The commit note for <code>e9ef5f7</code> records the end-to-end result as unchanged after that commit's change to how Jev and the rules combine.</li><li>The fallback run and the replay came before <code>e9ef5f7</code>. The replay exercises only the ledger, which that commit did not touch. The replay numbers come from <code>~/.freshtime/replay/2026-10-22/report.md</code>, a 133-second run with Jev classes.</li></ul>
+<h3>Coverage matrix</h3>
+<p>Each kind's claim, from the test plan, with today's counts.</p>
+<div class="tbl"><table><thead><tr><th>Kind</th><th>Claim</th><th>Pass</th><th>Todo</th><th>What the todo waits on</th></tr></thead><tbody><tr><td class="k"><code>event</code></td><td>A period question returns facts dated in it</td><td>1</td><td>1</td><td>In-text event dates</td></tr><tr><td class="k"><code>valid</code></td><td>A replaced fact answers the past, not now</td><td>4</td><td>1</td><td>#7</td></tr><tr><td class="k"><code>record</code></td><td>The ledger knows when it learned a fact</td><td>2</td><td>1</td><td>Record-time as-of</td></tr><tr><td class="k"><code>source</code></td><td>An old doc imported today does not look new</td><td>1</td><td>1</td><td>Git dates</td></tr><tr><td class="k"><code>reference</code></td><td>Relative phrases resolve to the right date</td><td>5</td><td>1</td><td>Relative phrases inside docs</td></tr><tr><td class="k"><code>sequence</code></td><td>A later same-day write wins</td><td>1</td><td>1</td><td>Same-day handoffs never replace (#12)</td></tr><tr><td class="k"><code>verification</code></td><td>Only the author or a re-read confirms</td><td>3</td><td>1</td><td>#3</td></tr><tr><td class="k"><code>access</code></td><td>Recently used stale facts are checked first</td><td>1</td><td>0</td><td>-</td></tr><tr><td class="k"><code>volatility</code></td><td>Shelf life follows the class</td><td>3</td><td>1</td><td>#4</td></tr><tr><td class="k"><code>intended</code></td><td>A future commitment is captured</td><td>1</td><td>1</td><td>#8</td></tr><tr><td class="k"><code>business</code></td><td>Fiscal periods map to dates</td><td>2</td><td>2</td><td>#9</td></tr><tr><td class="k"><code>asof</code></td><td>A stated date carries until changed</td><td>1</td><td>0</td><td>-</td></tr></tbody></table></div>
+<p>A todo is a real assertion that fails today and flips when the feature lands.</p>
+<h3>Ablation</h3>
+<p>The ablation runs with the intent rules and the ledger carried through the script, and again cold with a fresh ledger per question.</p>
+<p>Ablation totals over the seven questions. Found is the share of gold facts returned, and harm counts harmful facts shown as true.</p>
+<div class="tbl"><table><thead><tr><th>Setup</th><th>What runs</th><th>Found</th><th>Right status</th><th>Harm</th><th>Re-reads carried</th><th>Re-reads cold</th><th>Caught cold</th></tr></thead><tbody><tr><td class="k">none</td><td>Text search, read as now, no checks</td><td>79%</td><td>36%</td><td>4</td><td>0</td><td>0</td><td>0</td></tr><tr><td class="k">intf</td><td>Intent reading, plain store, no freshness</td><td>79%</td><td>79%</td><td>2</td><td>0</td><td>0</td><td>0</td></tr><tr><td class="k">agnt</td><td>Full ledger, every question read as now</td><td>86%</td><td>57%</td><td>4</td><td>4</td><td>24</td><td>11</td></tr><tr class="rec"><td class="k">both</td><td>Intent reading and the full ledger</td><td>100%</td><td>100%</td><td>0</td><td>4</td><td>9</td><td>4</td></tr><tr><td class="k">interaction</td><td>-</td><td>+0.14</td><td>0.00</td><td>-2</td><td>-</td><td>-</td><td>-</td></tr></tbody></table></div>
+<p>Harm is the count of harmful facts shown as current or <code>current_then</code>, so the interaction 0 - 2 - 4 + 4 = -2 means the pair removes 2 more than the two tools remove separately. The ledger alone removes no harm because it re-checks, finds the newest fact, and then shows it as true for questions about the past. Found facts show a positive interaction too, +0.14: only a re-read finds the two facts appended after ingest (q1 and q5), and only an as-of read returns the fact that was current on Oct 1 (q2). On the carried script one early now question pays for the re-reads later questions use, so both setups spend 4. The cold run is the fair comparison.</p>
+<h3>Intent score, replay and end to end</h3>
+<p>The intent score is a regression check: the rules get 20 of 20 and Jev 19 of 20 on <code>asof_mode</code>, both 20 of 20 on anchor and basis, at 2 ms and 112 ms per question. The labels were written next to the rules, so it does not measure accuracy.</p>
+<p>The replay on real history scores the ledger against git, not against its own rules. Over 50 sources and 143 sample dates, recall against git truth is 0.998 and precision is 1.0 once 345 backdated lines are set aside. 22 lines were misdated. The freshness check over 479 version pairs shows the 7-day status shelf life flags 4,672 facts of which 14% changed, about 7 flagged for each real change, and it catches 61% of status changes. The share of status facts changed rises with age: 7% at 0 to 7 days, 12% at 8 to 30, and 35% at 31 to 90. No fact in the sample is older than 90 days, so the decision and preference shelf lives never fire.</p>
+<p>The end-to-end suite drives real pi with <code>glm-5.3</code> through the seven questions as one conversation and checks the tool call, the reading, the facts and three Jev-judged checks per turn. The latest run passed 14 of 14 turns over 2 runs at about $0.06 per run as pi reports cost. With a bad Jev key all 7 turns still answered, and 8 of 8 trace rows recorded the error.</p>
+<p>The Jev probe scores the rules alone, Jev's raw mode choice alone, and the combination on 21 contrived questions. On the 10 traps worded to fool the keyword rules, the rules get 0, Jev alone 9 and the combination 9. All three get the 6 controls right. On the 3 questions with no time in them the rules get 3 and Jev 2, because Jev read "What color is the alpha logo?" as current. On the 2 questions about a past with no date, such as "What did we believe before the launch?", Jev gets both and the combination neither, because the contract has no way to say "past" without an anchor date. That gap is filed as #13.</p>
+</section>
+<section id="s7">
+<h2><span class="no">07</span><span class="t">Progress</span><span class="sht">07 / 10</span></h2>
+<p>Built on this branch and checked by the suites in Section 06: the contract, both tools, the pi-time launcher and extension, the ablation, and three test suites, with remaining work filed as issues. Each defect below was found by running the system.</p>
+<p>Defects found and fixed, in the order they were found.</p>
+<div class="tbl"><table><thead><tr><th>#</th><th>Defect</th><th>Found by</th><th>Fix</th></tr></thead><tbody><tr><td class="k">1</td><td>Every fact read as verified today, so the status line showed 0 stale</td><td>First interactive run, in a herdr pane</td><td><code>last_verified_at</code> at ingest is the author's date</td></tr><tr><td class="k">2</td><td>No real fact was ever replaced, because real handoffs use section headings</td><td>First build on the real corpus</td><td>Rule (d) and same-day <code>Next:</code> lines</td></tr><tr><td class="k">3</td><td>Text ranking answered a "current state" question from an older handoff</td><td>A question on the real corpus</td><td>A 5x text-match pool, then live and newer facts first</td></tr><tr><td class="k">4</td><td>Shared skills loaded with parse warnings, and pi downloaded fd into the repo</td><td>First launch</td><td><code>--no-skills</code>, and links to the user's <code>auth.json</code> and fd</td></tr><tr><td class="k">5</td><td>Stderr lines tore the pi screen</td><td>Herdr side pane run</td><td>Stderr only when there is no UI</td></tr><tr><td class="k">6</td><td>Jev dropped an inherited as-of on a follow-up</td><td>Jev ablation</td><td>Guard: only the change-of-period judgment drops it</td></tr><tr><td class="k">7</td><td>One ingest of three <code>Next:</code> lines closed all of them at the newest date</td><td>Kinds suite, valid</td><td>Each closes at its successor's date</td></tr><tr><td class="k">8</td><td>A removed line that came back stayed closed</td><td>Replay suite</td><td>Reopen it</td></tr><tr><td class="k">9</td><td>Jev read "next step ... now" as future</td><td>End-to-end suite</td><td>Guard: an explicit now word wins, replaced by row 13</td></tr><tr><td class="k">10</td><td>The judge failed right historical answers that mentioned the present</td><td>End-to-end suite</td><td>Ask "true for the asked time", not "currently true"</td></tr><tr><td class="k">11</td><td>The first replay counted rule replacements of present lines as misses</td><td>Reading the first replay report</td><td>A separate bucket for rule claims</td></tr><tr><td class="k">12</td><td>A todo marker stayed on a test that passes</td><td>Writing this page</td><td>Marker dropped in commit <code>5c375b9</code></td></tr><tr><td class="k">13</td><td>The now-word guard threw away three of Jev's right answers</td><td>Jev probe</td><td>On the Jev path, Jev's own now judgment decides</td></tr></tbody></table></div>
+<p>Three counts behind these rows were recorded in the learning guide and not re-run here: 0 of 809 facts stale before the verification fix and 342 after, 0 of 809 replaced before rule (d) and 48 after, and 1,998 replay misses from the closed re-added lines. One more issue was handled without a code defect: a ledger with the real corpus appeared in the home folder during the worker runs, its cause untraced, and it was deleted so the first real run stays a first run.</p>
+</section>
+<section id="s8">
+<h2><span class="no">08</span><span class="t">What's next</span><span class="sht">08 / 10</span></h2>
+<p>Seven issues are open for agents or for you, and five more are parked ideas. The order below puts first what changes another issue's measurement.</p>
+<p>The open issues in the order that unblocks most.</p>
+<div class="tbl"><table><thead><tr><th>Order</th><th>Issue</th><th>What it does</th><th>Why it goes here</th><th>Gate</th></tr></thead><tbody><tr><td class="k">You, now</td><td>#1</td><td>About 50 intent questions written blind by you</td><td>The only issue that needs you. It decides whether Jev stays on the intent path, and nothing else waits on it.</td><td><code>node freshtime-intf/score.ts</code></td></tr><tr class="rec"><td class="k">1</td><td>#12</td><td>Scope rule (d) to handoffs of the same unit, and break same-day ties</td><td>Rule (d) supersedes 6,416 line-dates in the replay, more than any other rule, so it moves every replacement count downstream.</td><td><code>npm run replay -- --jev</code>, kinds sequence todo flips</td></tr><tr><td class="k">2</td><td>#7</td><td>Replace other status bullets beyond <code>Next:</code> lines and sections</td><td>Same replacement code as #12, so the rules change once and are measured once.</td><td>Kinds valid todo flips, replay</td></tr><tr><td class="k">3</td><td>#6</td><td>Match reworded facts</td><td>A reworded bullet reads as replaced plus new, which loses its verification history and counts as a change in the freshness data.</td><td><code>npm test</code>, replay</td></tr><tr><td class="k">4</td><td>#5</td><td>Classify re-ingested facts with Jev</td><td>Facts added during a re-read get keyword classes, and shelf lives are fitted per class.</td><td><code>npm test</code>, ledger counts by class path</td></tr><tr><td class="k">5</td><td>#4</td><td>Fit shelf lives from the checks table</td><td>Needs the rules, fact identity and classes above to be stable first. The data is already on the issue.</td><td>Kinds volatility todo flips, replay</td></tr><tr><td class="k">6</td><td>#3</td><td>Record verifications and replacements stated in chat</td><td>Independent. It adds <code>verified_by</code> user as a new kind of check.</td><td>Kinds verification todo flips, <code>npm run e2e</code></td></tr></tbody></table></div>
+<p>The recommendation is a fresh session that takes this queue one issue at a time, with <code>npm test</code> at 0 fail before each commit, the replay re-run after #12, #7, #6 and #4, and <code>npm run e2e -- --runs</code> 2 once at the end. A todo that flips becomes a plain assertion in the same commit, so the suites tighten as the work lands.</p>
+</section>
+<section id="s9">
+<h2><span class="no">09</span><span class="t">What's after</span><span class="sht">09 / 10</span></h2>
+<p>Beyond the open queue, each item is a decision with a cost on each side.</p>
+<p>Decisions after the open queue.</p>
+<div class="tbl"><table><thead><tr><th>Decision</th><th>Choice</th><th>For</th><th>Against</th><th>Decide when</th></tr></thead><tbody><tr><td class="k">Store adapters (#10)</td><td>Put Graphiti or Mem0 behind the contract</td><td>Entity resolution and scale without changing intf</td><td>Another service, and each engine has its own idea of current that must map to four statuses</td><td>The ledger needs sharing across agents or outgrows SQLite</td></tr><tr><td class="k">qmd retrieval (#11)</td><td>Let qmd supply the candidates</td><td>Could find reworded matches that token-OR text match misses</td><td>A second index to keep in step, and a ranking blend to tune</td><td>Replay or e2e show retrieval misses, not dating misses</td></tr><tr><td class="k">Shelf-life curves</td><td>Fit change by age, not one cut-off</td><td>The replay shows change rising with age, which a single cut-off ignores</td><td>The data is handoff files only and correlated within a source, so a curve may fit habits, not truth</td><td>#4 has run and the checks table has months of rows</td></tr><tr><td class="k">Intended time (#8)</td><td>Schedule what the reading parses</td><td>Closes the one kind that is parsed and then dropped</td><td>Needs a scheduler and a way to fire inside pi. The research rates schedulers as available and the link to memory as the gap</td><td>A real reminder use case appears</td></tr><tr><td class="k">Fiscal calendars (#9)</td><td>Map FY phrases to dates</td><td>"FY26" and "Q3 FY26" get anchors instead of only a kind tag</td><td>A per-organization setting to keep correct</td><td>Questions about fiscal periods show up</td></tr><tr><td class="k">Past with no date (#13)</td><td>Resolve "before the launch" to the date of a ledger fact, or ask for a date</td><td>Jev already reads these as past, so the reading would follow</td><td>A new anchor kind in the contract, and an event match that can pick the wrong fact</td><td>Blind questions in #1 show how often people ask this way</td></tr><tr><td class="k">Jev on intent</td><td>Keep Jev on the intent path</td><td>On the probe's 10 traps Jev reads 9 and the rules none</td><td>No gain on the labeled sets, one guard still needed, a known "next step" weakness, and 112 ms against 2 ms per question</td><td>After the blind set in #1</td></tr></tbody></table></div>
+<p>Jev's value on intent is the open question with the most riding on it. On the labeled sets its reading adds nothing over the rules, and on the contrived traps it reads 9 of 10 that the rules miss. Neither set was written blind, so #1 decides it. Classification is a different use: Jev labels each line's volatility, and keyword classes put almost everything into decision.</p>
+</section>
+<section id="s10">
+<h2><span class="no">10</span><span class="t">Risks and limits</span><span class="sht">10 / 10</span></h2>
+<ul class="accent"><li>The ablation and end-to-end suites run on synthetic fixtures: seven questions over three projects, two edits behind the ledger. They show the mechanism, not a rate.</li><li>The 20 intent labels were written next to the rules, and the ablation gold was written with its fixtures for this test, so passing either is a regression check.</li><li>The replay samples are thin: 50 sources, 143 sample dates and 479 version pairs, correlated within each source, with no confidence intervals and no fact older than 90 days.</li><li>The replay's rule (d) over-reach check is inconclusive: it flags all 1,842 cases, because the filename test passes whenever two handoffs have different names and cannot tell a new unit of work from the same unit renamed.</li><li>Two end-to-end runs do not give a stable pass rate, and the suite's own notes name three sources of judge and model noise.</li><li>The fallback end-to-end run predates commit <code>e9ef5f7</code>, which also reordered the rules so that a held as-of now wins over a future word.</li><li>The 7-day status shelf life is costly on real history: it flags 4,672 facts of which 14% changed, about 7 re-reads for each change it finds.</li><li>Project text leaves the machine: ingest sends each new line to Jev, TypeSafe's hosted API, in batches of 40 for classification, and pi-time sends questions and ledger facts to the zai model. <code>FRESHTIME_JEV=off</code> keeps classification and intent reading on the local rules, and the model calls remain.</li><li>The probe is contrived against the rules by design, so its scores show that Jev is not echoing the rules and say nothing about accuracy.</li></ul>
+</section>
+<p class="foot">Built 2026-10-22 from the repo at commit <code>e9ef5f7</code>. Numbers carry their run in Section 06, and the command outputs are in <code>docs/content/freshtime-design/runs-2026-10-22.txt</code>.</p>
+</main>
+</div>
+</div>
+<script>
+document.documentElement.classList.add('js');
+const NS = 'http://www.w3.org/2000/svg';
+const COL = {warn:'--th-action-edge', ice:'--th-idle', agent:'--th-struct', lav:'--th-action-edge', gold:'--th-struct', red:'--th-alert', green:'--th-ok', tan:'--th-line-strong'};
+const css = n => `var(${n})`;
+
+function parse(txt){
+  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const [ft, k = '', ...lab] = l.split(':');
+    const [f, t] = ft.split('>').map(s => s.trim());
+    const o = {f, t, label: lab.join(':').trim(), kinds: k.trim().split(/\s+/).filter(Boolean)};
+    for (const x of o.kinds){
+      if (/^[trbl]-[trbl]$/.test(x)) [o.fs, o.ts] = x.split('-');
+      else if (/^o[st]?-?\d+$/.test(x)) { const m = x.match(/^o([st]?)(-?\d+)$/); o['off' + m[1]] = +m[2]; }
+      else if (/^d\d+$/.test(x)) o.depth = +x.slice(1);
+    }
+    return o;
+  });
+}
+const N = {t:[0,-1], b:[0,1], l:[-1,0], r:[1,0]};
+function anchor(r, s, off){
+  const cx = r.x + r.w/2, cy = r.y + r.h/2;
+  if (s === 't') return [cx + off, r.y];
+  if (s === 'b') return [cx + off, r.y + r.h];
+  if (s === 'l') return [r.x, cy + off];
+  return [r.x + r.w, cy + off];
+}
+function autoSides(a, b){
+  const dx = (b.x + b.w/2) - (a.x + a.w/2), dy = (b.y + b.h/2) - (a.y + a.h/2);
+  const hGap = dx > 0 ? b.x - (a.x + a.w) : a.x - (b.x + b.w);
+  const vGap = dy > 0 ? b.y - (a.y + a.h) : a.y - (b.y + b.h);
+  if (hGap > 6 && (hGap >= vGap || vGap < 6)) return dx > 0 ? ['r','l'] : ['l','r'];
+  return dy > 0 ? ['b','t'] : ['t','b'];
+}
+const hz = s => s === 'l' || s === 'r';
+function ortho(p0, fs, p3, ts, depth){
+  const k = fs === ts ? (depth ? depth * .75 : 30) : 16;
+  const a = [p0[0] + N[fs][0]*k, p0[1] + N[fs][1]*k], b = [p3[0] + N[ts][0]*k, p3[1] + N[ts][1]*k];
+  let mid;
+  if (fs === ts && hz(fs)){ const x = fs === 'r' ? Math.max(a[0], b[0]) : Math.min(a[0], b[0]); mid = [[x, a[1]], [x, b[1]]]; }
+  else if (fs === ts){ const y = fs === 'b' ? Math.max(a[1], b[1]) : Math.min(a[1], b[1]); mid = [[a[0], y], [b[0], y]]; }
+  else if (hz(fs) && hz(ts)){ const x = (a[0] + b[0]) / 2; mid = [[x, a[1]], [x, b[1]]]; }
+  else if (!hz(fs) && !hz(ts)){ const y = (a[1] + b[1]) / 2; mid = [[a[0], y], [b[0], y]]; }
+  else mid = hz(fs) ? [[b[0], a[1]]] : [[a[0], b[1]]];
+  const pts = [p0, a, ...mid, b, p3].filter((p, i, all) => i === 0 || Math.hypot(p[0] - all[i-1][0], p[1] - all[i-1][1]) > .5)
+    .filter((p, i, all) => { if (i === 0 || i === all.length - 1) return true; const [q, r] = [all[i-1], all[i+1]];
+      return Math.abs((p[0] - q[0]) * (r[1] - p[1]) - (p[1] - q[1]) * (r[0] - p[0])) > .5; });
+  let d = `M${pts[0]}`;
+  for (let i = 1; i < pts.length - 1; i++){
+    const [q, p, r] = [pts[i-1], pts[i], pts[i+1]], l1 = Math.hypot(p[0]-q[0], p[1]-q[1]), l2 = Math.hypot(r[0]-p[0], r[1]-p[1]);
+    const rad = Math.min(10, l1 / 2, l2 / 2), u = [(p[0]-q[0]) / l1, (p[1]-q[1]) / l1], v = [(r[0]-p[0]) / l2, (r[1]-p[1]) / l2];
+    d += `L${p[0] - u[0]*rad},${p[1] - u[1]*rad}Q${p}  ${p[0] + v[0]*rad},${p[1] + v[1]*rad}`;
+  }
+  return {d: d + `L${pts[pts.length - 1]}`, pts};
+}
+function draw(sch){
+  const spec = sch.querySelector('script.w'); if (!spec) return;
+  sch.style.minWidth = (sch.dataset.min || 0) + 'px';
+  const fig = sch.closest('figure'), fb = sch.closest('.fb');
+  if (fig) fig.classList.toggle('wide', fb.scrollWidth > fb.clientWidth + 2);
+  sch.querySelectorAll('.wires,.wl').forEach(e => e.remove());
+  const box = sch.getBoundingClientRect();
+  const rect = id => { const e = sch.querySelector('#' + id); if (!e) { console.warn('no node', id); return null; }
+    const r = e.getBoundingClientRect(); return {x:r.left-box.left, y:r.top-box.top, w:r.width, h:r.height}; };
+  const svg = document.createElementNS(NS, 'svg'); svg.classList.add('wires');
+  const defs = document.createElementNS(NS, 'defs'); svg.append(defs);
+  const marks = {}, segs = [], pending = [];
+  const mark = (c) => { if (marks[c]) return marks[c]; const id = 'm' + Math.random().toString(36).slice(2,8);
+    const m = document.createElementNS(NS, 'marker');
+    Object.entries({id, viewBox:'0 0 10 10', refX:8.5, refY:5, markerWidth:7, markerHeight:7, orient:'auto-start-reverse'}).forEach(([k,v]) => m.setAttribute(k, v));
+    const p = document.createElementNS(NS, 'path'); p.setAttribute('d', 'M0 0L10 5L0 10z'); p.style.fill = c; m.append(p); defs.append(m);
+    return marks[c] = id; };
+  for (const w of parse(spec.textContent)){
+    const a = rect(w.f), b = rect(w.t); if (!a || !b) continue;
+    const [fs, ts] = w.fs ? [w.fs, w.ts] : autoSides(a, b);
+    const off = w.off || 0;
+    const p0 = anchor(a, fs, w.offs ?? off), p3 = anchor(b, ts, w.offt ?? off);
+    const {d, pts} = ortho(p0, fs, p3, ts, w.depth);
+    const kind = w.kinds.find(x => COL[x]); const c = css(kind ? COL[kind] : '--th-line-strong');
+    const path = document.createElementNS(NS, 'path'); path.setAttribute('d', d); path.classList.add('w');
+    if (w.kinds.includes('dash')) path.classList.add('dash');
+    path.style.stroke = c; path.setAttribute('marker-end', `url(#${mark(c)})`);
+    if (w.kinds.includes('both')) path.setAttribute('marker-start', `url(#${mark(c)})`);
+    svg.append(path); segs.push(...pts.slice(1).map((p, i) => [pts[i], p]));
+    const flow = path.cloneNode(); flow.removeAttribute('marker-end'); flow.removeAttribute('marker-start');
+    flow.setAttribute('class', 'flow'); flow.style.stroke = c; svg.append(flow);
+    if (w.label){
+      const l = document.createElement('div'); l.className = 'wl'; l.textContent = w.label; if (kind) l.style.setProperty('--lc', c); sch.append(l);
+      pending.push({l, pts, p0});
+    }
+  }
+  const hit = (r, o) => r.left < o.right - 1 && o.left < r.right - 1 && r.top < o.bottom - 1 && o.top < r.bottom - 1;
+  const rel = o => { const u = o.getBoundingClientRect(); return {left:u.left-box.left, right:u.right-box.left, top:u.top-box.top, bottom:u.bottom-box.top}; };
+  for (const {l, pts, p0} of pending){
+    const p3 = pts[pts.length - 1], cands = [];
+    const runs = pts.slice(1).map((p, i) => ({q: pts[i], p, len: Math.hypot(p[0]-pts[i][0], p[1]-pts[i][1]), flat: Math.abs(p[1]-pts[i][1]) < Math.abs(p[0]-pts[i][0])}))
+      .filter(r => r.len > 12).sort((a, b) => b.len - a.len);
+    for (const r of runs) for (const f of [.5, .3, .7]) for (const side of [0, 1])
+      cands.push({x: r.q[0] + (r.p[0]-r.q[0])*f, y: r.q[1] + (r.p[1]-r.q[1])*f, cls: r.flat ? ['h', 'hb'][side] : ['v', 'vl'][side]});
+    for (const r of runs.filter(r => r.flat)) for (const side of [0, 1]) cands.push({x: (p0[0] + p3[0]) / 2, y: r.q[1], cls: ['h', 'hb'][side]});
+    if (!cands.length) cands.push({x: p0[0], y: p0[1], cls: 'h'});
+    const others = [...sch.querySelectorAll('.n, .wl')].filter(o => o !== l).map(rel);
+    const cost = c => { l.className = 'wl ' + c.cls; l.style.left = c.x + 'px'; l.style.top = c.y + 'px'; const r = rel(l);
+      return 100 * others.filter(o => hit(r, o)).length + segs.filter(([q, p]) => hit(r, {left:Math.min(q[0], p[0]) - 1, right:Math.max(q[0], p[0]) + 1, top:Math.min(q[1], p[1]) - 1, bottom:Math.max(q[1], p[1]) + 1})).length; };
+    let best = null, bc = Infinity;
+    for (const c of cands){ const k = cost(c); if (k < bc){ bc = k; best = c; } if (!k) break; }
+    cost(best);
+  }
+  sch.append(svg);
+  svg.querySelectorAll('path.w').forEach(p => p.style.setProperty('--len', Math.ceil(p.getTotalLength())));
+}
+const schs = [...document.querySelectorAll('.sch')];
+const owner = new Map(schs.map(s => [s.parentElement, s]));
+const ro = new ResizeObserver(es => es.forEach(e => draw(owner.get(e.target))));
+schs.forEach(s => { draw(s); ro.observe(s.parentElement); });
+document.fonts && document.fonts.ready.then(() => schs.forEach(draw));
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('drawn', 'live'); io.unobserve(e.target); } }), {threshold:.25});
+schs.forEach(s => io.observe(s));
+document.querySelectorAll('.totals').forEach(t => io.observe(t));
+
+document.querySelectorAll('.radar').forEach(el => {
+  const axes = JSON.parse(el.dataset.axes), ser = JSON.parse(el.dataset.series);
+  const R = 150, labs = [], n = axes.length, pt = (i, v) => { const a = -Math.PI/2 + i*2*Math.PI/n; return [Math.cos(a)*R*v/5, Math.sin(a)*R*v/5]; };
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', el.dataset.label);
+  const add = (tag, at, txt) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([k,v]) => e.setAttribute(k, v)); if (txt != null) e.textContent = txt; svg.append(e); return e; };
+  for (let r = 1; r <= 5; r++) add('polygon', {class:'ring', points: axes.map((_, i) => pt(i, r)).join(' ')});
+  axes.forEach((ax, i) => {
+    const [x, y] = pt(i, 5); add('line', {class:'spoke', x1:0, y1:0, x2:x, y2:y});
+    const [cx] = pt(i, 5), anc = Math.abs(cx) < 8 ? 'middle' : cx > 0 ? 'start' : 'end';
+    labs.push([i, add('text', {'text-anchor':anc}, ax), add('text', {class:'v', 'text-anchor':anc}, ser.map(s => s.v[i]).join('  to  '))]);
+  });
+  const place = (fs) => labs.forEach(([i, t, v]) => { const a = -Math.PI/2 + i*2*Math.PI/n, s = Math.sin(a), d = R + 8 + fs*.5;
+    const x = Math.cos(a)*d, y = Math.sin(a)*d + (s < -.5 ? -fs*1.1 : s > .5 ? fs*.9 : 0);
+    t.setAttribute('x', x); t.setAttribute('y', y - fs*.15); v.setAttribute('x', x); v.setAttribute('y', y + fs*.95); });
+  [...ser].sort((a, b) => (a.dash ? 1 : 0) - (b.dash ? 1 : 0)).forEach(s => { s.el = add('polygon', {class:'poly', points: s.v.map((v, i) => pt(i, v)).join(' '), 'fill-opacity':s.dash ? 0 : .88, 'stroke-width':s.dash ? 3 : 2, 'stroke-linejoin':'round'});
+    s.el.style.fill = css(s.c); s.el.style.stroke = css(s.c); if (s.dash) s.el.style.strokeDasharray = '6 5';
+    s.v.forEach((v, i) => { const [x, y] = pt(i, v); const d = add('circle', {cx:x, cy:y, r:3.5}); d.style.fill = css(s.c); s.dots = (s.dots || []).concat(d); }); });
+  el.querySelector('.plot').append(svg);
+  const list = document.createElement('ol'); list.className = 'rlist';
+  list.innerHTML = axes.map((ax, i) => `<li><b>${String(i + 1).padStart(2, '0')}</b> ${ax}<span>${ser.map(s => s.v[i]).join(' to ')}</span></li>`).join('');
+  el.querySelector('.rctl').append(list);
+  const fit = () => { const compact = el.querySelector('.plot').clientWidth < 460; el.classList.toggle('compact', compact);
+    labs.forEach(([i, t, v]) => { t.textContent = compact ? String(i + 1).padStart(2, '0') : axes[i]; v.style.display = compact ? 'none' : ''; });
+    for (let k = 0; k < 3; k++){ const b = svg.getBBox(); svg.setAttribute('viewBox', `${b.x - 6} ${b.y - 6} ${b.width + 12} ${b.height + 12}`);
+    const s = Math.min(svg.clientWidth / (b.width + 12) || 1, 1); svg.querySelectorAll('text').forEach(t => t.style.fontSize = (t.classList.contains('v') ? 13 : 14) / s + 'px'); place(14 / s); } };
+  place(14); fit(); document.fonts && document.fonts.ready.then(fit); let lastW = 0; new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (w !== lastW){ lastW = w; fit(); } }).observe(el.querySelector('.plot'));
+  el.querySelectorAll('button').forEach((btn, i) => btn.addEventListener('click', () => {
+    const on = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', on);
+    [ser[i].el, ...ser[i].dots].forEach(e => e.style.opacity = on ? 1 : 0);
+  }));
+});
+
+const RLINES = {a:'in progress', b:'sent back', d:'done', i:'not taken this run'};
+const RSIZE = {agent:11, rt:11, ask:11, unit:8, hub:22, check:10, opt:10, kit:12, gate:13, bar:22, you:12};
+function rglyph(g, k, el){
+  const r = RSIZE[k];
+  if (k === 'bar') el(g, 'rect', {class:'shape', x:-4, y:-22, width:8, height:44});
+  else if (k === 'check' || k === 'opt' || k === 'kit') el(g, 'rect', {class:'shape', x:-r, y:-r, width:2*r, height:2*r});
+  else if (k === 'gate') el(g, 'polygon', {class:'shape', points:`0,${-r} ${r},0 0,${r} ${-r},0`});
+  else if (k === 'you'){ el(g, 'circle', {class:'shape', cx:0, cy:-6, r:5.5}); el(g, 'path', {class:'shape', d:'M-10,11a10,9 0 0 1 20,0z'}); }
+  else { el(g, 'circle', {class:'pulse', r}); el(g, 'circle', {class:'shape', r}); }
+  if (!['bar', 'you'].includes(k)) el(g, 'path', {class:'tick', d:k === 'unit' ? 'M-3.5,0l2.5,2.5l4.5,-5' : 'M-5,0l3.5,3.5l6.5,-7'});
+}
+document.querySelectorAll('[data-replay]').forEach(fb => {
+  const spec = JSON.parse(fb.querySelector('script[type="application/json"]').textContent);
+  const [VW, VH] = spec.vb, SN = spec.stations, ED = spec.edges, STEPS = spec.steps;
+  const el = (p, tag, at = {}, txt) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; p.append(e); return e; };
+  const lines = v => Array.isArray(v) ? v : v ? [v] : [];
+
+  const head = document.createElement('div'); head.className = 'rbar';
+  head.innerHTML = `<button type="button" class="rplay" aria-pressed="false">Play</button><button type="button" class="rrestart">Restart</button>`
+    + `<span class="rspeed" role="group" aria-label="Speed">${['.5', '1', '2'].map(v => `<button type="button" data-speed="${v}" aria-pressed="${v === '1'}">${v === '.5' ? '0.5' : v}x</button>`).join('')}</span>`
+    + `<span class="rleg"></span>`;
+  const leg = head.querySelector('.rleg');
+  for (const [k, lab, cls] of spec.kinds || []){ const s = document.createElement('span'), sv = document.createElementNS(NS, 'svg');
+    sv.setAttribute('viewBox', '-14 -14 28 28'); sv.setAttribute('class', 'rp kg'); sv.setAttribute('aria-hidden', 'true');
+    const g = el(sv, 'g', {class:`nd ${k} ${cls || ''}`}); rglyph(g, k, el); if (k === 'bar' || k === 'hub') g.setAttribute('transform', 'scale(.55)');
+    s.append(sv, lab); leg.append(s); }
+  for (const k of spec.lines || ['a', 'b', 'd', 'i']){ const s = document.createElement('span'); s.innerHTML = `<i class="lg-${k}"></i>${RLINES[k]}`; leg.append(s); }
+  const wrap = document.createElement('div'); wrap.className = 'rwrap';
+  const svg = el(wrap, 'svg', {class:'rp', viewBox:`0 0 ${VW} ${VH}`, role:'img', 'aria-label':spec.label});
+  svg.style.minWidth = (spec.minw || 960) + 'px';
+  const chipsEl = document.createElement('div'); chipsEl.className = 'rchips'; chipsEl.setAttribute('role', 'group'); chipsEl.setAttribute('aria-label', 'Jump to a stage');
+  const logEl = document.createElement('ol'); logEl.className = 'rlog'; logEl.setAttribute('aria-live', 'polite'); logEl.setAttribute('aria-label', 'Session log');
+  logEl.style.height = `calc(${spec.rows || 5} * 31px)`;
+  fb.prepend(head, wrap, chipsEl, logEl);
+
+  for (const [tag, at, txt] of spec.deco || []) el(svg, tag, at, txt);
+  const base = {}, over = {};
+  for (const [id, d] of Object.entries(ED)) base[id] = el(svg, 'path', {d, class:'rb' + ((spec.loops || []).includes(id) ? ' loop' : '')});
+  for (const [id, d] of Object.entries(ED)) { over[id] = el(svg, 'path', {d, class:'ro'}); over[id].len = over[id].getTotalLength(); }
+  const arrows = {};
+  const near = pt => Object.values(SN).find(s => Math.hypot(s.x - pt.x, s.y - pt.y) < 4);
+  const arrowAt = (p, at, back) => { const L = p.getTotalLength(), q = p.getPointAtLength(at), r = p.getPointAtLength(Math.max(0, Math.min(L, at + (back ? 3 : -3))));
+    const a = Math.atan2(q.y - r.y, q.x - r.x) * 180 / Math.PI;
+    return el(svg, 'polygon', {class:'ar', points:'0,0 -10,-5.5 -10,5.5', transform:`translate(${q.x} ${q.y}) rotate(${a})`}); };
+  const gap = s => s ? (s.k === 'bar' ? 9 : RSIZE[s.k] + 5) : 1;
+  for (const [id, p] of Object.entries(base)){
+    const L = p.getTotalLength(), list = [arrowAt(p, L - gap(near(p.getPointAtLength(L))), false)];
+    if ((spec.both || []).includes(id)) list.push(arrowAt(p, gap(near(p.getPointAtLength(0))), true));
+    arrows[id] = list;
+  }
+  const pills = {};
+  for (const [id, p] of Object.entries(spec.pills || {})){
+    const g = el(svg, 'g', {class:'pill'}); const r = el(g, 'rect', {rx:11, height:22, y:-10.5}); const tx = el(g, 'text', {y:5, 'text-anchor':'middle'});
+    const m = p.edge ? base[p.edge].getPointAtLength(base[p.edge].getTotalLength() * (p.f ?? .5)) : p;
+    g.setAttribute('transform', `translate(${m.x} ${m.y})`); pills[id] = {g, r, tx, idle:p.t};
+  }
+  const nodes = {}, stT = {};
+  for (const [id, s] of Object.entries(SN)){
+    const g = el(svg, 'g', {class:`nd ${s.k} ${s.cls || ''}`, transform:`translate(${s.x} ${s.y})`}); rglyph(g, s.k, el);
+    const r = RSIZE[s.k], L = [...lines(s.nm).map(t => ['nm', t]), ...lines(s.sb).map(t => ['sb', t])], at = s.at || 'below';
+    const H = ([c]) => c === 'nm' ? 17 : 16, total = L.reduce((a, l) => a + H(l), 0);
+    let y = 0, x = 0, anchor = 'middle';
+    if (at.startsWith('below')) y = r + 20;
+    else if (at.startsWith('above')) y = -r - 8 - (total - H(L[L.length - 1]));
+    else if (at === 'right' || at === 'left'){ x = (at === 'right' ? 1 : -1) * (r + 12); anchor = at === 'right' ? 'start' : 'end'; y = -total / 2 + 12; }
+    else if (at === 'unit'){ x = -r - 6; anchor = 'end'; y = -r - 2; }
+    if (at.endsWith('-start')){ anchor = 'start'; x = -r + 2; } if (at.endsWith('-end')){ anchor = 'end'; x = r - 2; }
+    if (s.dx) x += s.dx;
+    L.forEach((l, i) => { const t = el(g, 'text', {class:l[0], x, y, 'text-anchor':anchor}, l[1]); if (i === 0 && s.st) stT[id] = t; y += H(l); });
+    nodes[id] = g;
+  }
+  const checks = {};
+  for (const c of spec.checks || []){ const g = el(svg, 'g', {class:'cb', transform:`translate(${c.x} ${c.y})`});
+    el(g, 'rect', {x:0, y:-11, width:13, height:13}); el(g, 'path', {class:'tick', d:'M2.5,-4.5l3,3l5,-6'}); el(g, 'text', {class:'sb', x:21, y:0}, c.t); checks[c.id] = g; }
+  let hu = null, huT = null;
+  if (spec.human){ const h = spec.human; hu = el(svg, 'g', {class:'human', transform:`translate(${h.x} ${h.y})`});
+    el(hu, 'circle', {cx:0, cy:-8, r:6}); el(hu, 'path', {d:'M-11,12a11,10 0 0 1 22,0z'});
+    el(hu, 'text', {class:'nm', x:22, y:-4}, h.nm); huT = el(hu, 'text', {class:'sb', x:22, y:13}, h.t); }
+  const nTok = Math.max(1, ...STEPS.map(s => (s.move || []).length));
+  const tokens = Array.from({length:nTok}, () => { const g = el(svg, 'g', {class:'tok'}); const w = spec.token.length * 8 + 18;
+    el(g, 'rect', {x:-w / 2, y:-11, width:w, height:22, rx:11}); el(g, 'text', {y:4.5, 'text-anchor':'middle'}, spec.token); return g; });
+  let t0 = 0; STEPS.forEach(s => { s.t = t0; t0 += s.dur; }); const TOTAL = t0;
+
+  const fresh = () => ({e:{}, n:{}, p:{}, c:{}, h:spec.human ? spec.human.t : ''});
+  const merge = (st, s) => { if (!s) return; for (const k of ['e', 'n', 'p', 'c']) Object.assign(st[k], s[k] || {}); if (s.h) st.h = s.h; };
+  function render(t){
+    t = Math.max(0, Math.min(TOTAL, t));
+    let st = fresh(), cur = null;
+    for (const s of STEPS){ if (s.reset) st = fresh(); if (t >= s.t + s.dur) merge(st, s.after); else { cur = s; break; } }
+    const f = cur ? (t - cur.t) / cur.dur : 1; if (cur) merge(st, cur.during);
+    for (const [id, o] of Object.entries(over)){
+      const moving = cur && cur.move && cur.move.includes(id) && !cur.rev;
+      o.setAttribute('class', 'ro st-' + (moving ? 'active' : st.e[id] || 'idle'));
+      o.style.strokeDasharray = moving ? `${o.len} ${o.len}` : ''; o.style.strokeDashoffset = moving ? o.len * (1 - f) : '';
+      arrows[id].forEach(h => h.setAttribute('class', 'ar st-' + (moving ? (f > .9 ? 'active' : 'idle') : st.e[id] || 'idle')));
+    }
+    for (const [id, g] of Object.entries(nodes)){ const s = SN[id], v = st.n[id] || 'idle'; g.setAttribute('class', `nd ${s.k} ${s.cls || ''} st-${v}`);
+      if (stT[id]) stT[id].textContent = s.st[v] || lines(s.nm)[0]; }
+    for (const [id, p] of Object.entries(pills)){ const [txt, tone] = st.p[id] || [p.idle, ''];
+      if (p.tx.textContent !== txt){ p.tx.textContent = txt; const w = p.tx.getComputedTextLength() + 22; p.r.setAttribute('x', -w / 2); p.r.setAttribute('width', w); }
+      p.g.setAttribute('class', 'pill' + (tone ? ' st-' + tone : '')); }
+    for (const [k, g] of Object.entries(checks)) g.classList.toggle('on', !!st.c[k]);
+    if (hu){ huT.textContent = st.h; const m = st.n[spec.human.of] || ''; hu.setAttribute('class', 'human' + (m === 'active' ? ' st-active' : m === 'done' ? ' st-done' : '')); }
+    const mv = cur && cur.move ? cur.move : [];
+    tokens.forEach((g, i) => { const id = mv[i]; if (!id){ g.style.display = 'none'; return; } const o = over[id], p = o.getPointAtLength(o.len * (cur.rev ? 1 - f : f));
+      g.style.display = ''; g.setAttribute('transform', `translate(${p.x} ${p.y})`); g.classList.toggle('dot', mv.length > 1); });
+    const n = STEPS.filter(s => t >= s.t).length;
+    if (logEl.childElementCount !== n){
+      logEl.replaceChildren(...STEPS.slice(0, n).map(s => { const li = document.createElement('li'); li.className = s.log[3];
+        li.innerHTML = `<time>T+${(s.t / 1000).toFixed(1)}s</time><b></b><span></span><em></em>`;
+        [li.children[1].textContent, li.children[2].textContent, li.children[3].textContent] = s.log; return li; }));
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    let ci = -1; STEPS.forEach((s, i) => { if (s.chip && t >= s.t) ci = i; });
+    chips.forEach(c => { c.b.classList.toggle('on', c.i === ci); c.b.classList.toggle('past', c.i < ci); });
+  }
+
+  const chips = STEPS.map((s, i) => ({s, i})).filter(c => c.s.chip).map((c, n) => {
+    const b = document.createElement('button'); b.type = 'button'; b.innerHTML = `<b>${n + 1}</b>${c.s.chip}`; chipsEl.append(b);
+    b.addEventListener('click', () => { t = c.s.t; render(t); }); return {b, i:c.i}; });
+  const hint = document.createElement('span'); hint.textContent = 'Pick a stage to jump to it'; chipsEl.append(hint);
+  const playB = head.querySelector('.rplay'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let t = 0, speed = 1, playing = false, last = 0;
+  const setPlaying = on => { playing = on; playB.textContent = on ? 'Pause' : 'Play'; playB.setAttribute('aria-pressed', on); if (on){ last = performance.now(); requestAnimationFrame(tick); } };
+  function tick(now){ if (!playing) return; t += (now - last) * speed; last = now; render(t); if (t >= TOTAL) return setPlaying(false); requestAnimationFrame(tick); }
+  playB.addEventListener('click', () => { if (!playing && t >= TOTAL) t = 0; setPlaying(!playing); });
+  head.querySelector('.rrestart').addEventListener('click', () => { t = 0; render(t); setPlaying(true); });
+  head.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => { speed = +b.dataset.speed;
+    head.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); }));
+  const fig = fb.closest('figure');
+  new ResizeObserver(() => fig.classList.toggle('wide', wrap.scrollWidth > wrap.clientWidth + 2)).observe(wrap);
+  if (still){ t = TOTAL; render(t); }
+  else { render(0); const seen = new IntersectionObserver(es => { if (es[0].isIntersecting){ seen.disconnect(); setPlaying(true); } }, {threshold:.4}); seen.observe(svg); }
+});
+
+document.querySelectorAll('.score table').forEach(t => {
+  t.addEventListener('mouseover', e => { const c = e.target.closest('td,th'); if (!c) return;
+    t.querySelectorAll('.colon').forEach(x => x.classList.remove('colon'));
+    if (c.cellIndex > 0) t.querySelectorAll(`tr > :nth-child(${c.cellIndex + 1})`).forEach(x => x.classList.add('colon')); });
+  t.addEventListener('mouseleave', () => t.querySelectorAll('.colon').forEach(x => x.classList.remove('colon')));
+});
+
+const links = [...document.querySelectorAll('.index a, .tabs a')];
+const spy = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return;
+  links.forEach(a => { const on = a.hash === '#' + e.target.id; a.classList.toggle('on', on);
+    if (on) { const bar = a.parentElement; const r = a.offsetLeft - bar.clientWidth/2, c = a.offsetTop - bar.clientHeight/2;
+      bar.scrollTo({left: bar.scrollWidth > bar.clientWidth ? r : 0, top: bar.scrollHeight > bar.clientHeight ? c : 0, behavior:'smooth'}); } }); }),
+  {rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('main section[id]').forEach(s => spy.observe(s));
+
+const tgl = document.querySelector('.toggle');
+const dark = () => (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+const label = () => { tgl.querySelector('span').textContent = dark() ? 'Dark' : 'Light'; tgl.setAttribute('aria-pressed', dark()); };
+try { const t = localStorage.getItem('freshtime-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+if (tgl) label();
+tgl && tgl.addEventListener('click', () => {
+  const next = dark() ? 'light' : 'dark';
+  const go = () => { document.documentElement.dataset.theme = next; label(); try { localStorage.setItem('freshtime-theme', next); } catch (e) {} };
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return go();
+  const r = tgl.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  document.startViewTransition(go).ready.then(() => document.documentElement.animate(
+    {clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${R}px at ${x}px ${y}px)`]}, {duration: 600, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)'}));
+});
+
+</script>
+</body>
+</html>

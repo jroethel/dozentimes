@@ -1,0 +1,172 @@
+# Command runs for the freshtime design explanation
+# Run 2026-10-22 01:23 -0400 on branch feat/pi-time-poc at commit e9ef5f7, Node v26.12.0.
+# Synthetic fixtures only. Real-data runs (replay, e2e, corpus build) are summarized in the design doc as aggregates.
+
+$ npm test   (summary lines)
+ℹ tests 62
+ℹ pass 51
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 11
+
+$ npm run -s kinds
+kind         | pass | todo | fail | todo reasons
+event        |    1 |    1 |    0 | not built: in-text event dates
+valid        |    4 |    1 |    0 | #7
+record       |    2 |    1 |    0 | not built: record-time as-of
+source       |    1 |    1 |    0 | not built: git dates
+reference    |    5 |    1 |    0 | not built: relative phrases in docs
+sequence     |    1 |    1 |    0 | defect: same-day handoff snapshots never replace each other
+verification |    3 |    1 |    0 | #3
+access       |    1 |    0 |    0 | 
+volatility   |    3 |    1 |    0 | #4
+intended     |    1 |    1 |    0 | #8
+business     |    2 |    2 |    0 | #9
+asof         |    1 |    0 |    0 | 
+
+$ node test/ablation.ts
+intf path: fallback, ledger: carried through the script
+
+question  none            intf            agnt            both            
+q1           0% h1 c0        0% h1 c0      100% h0 c4      100% h0 c4     
+q2           0% h1 c0      100% h0 c0        0% h1 c0      100% h0 c0     
+q3           0% h0 c0      100% h0 c0        0% h1 c0      100% h0 c0     
+q4           0% h0 c0      100% h0 c0        0% h1 c0      100% h0 c0     
+q5          50% h1 c0       50% h1 c0      100% h0 c0      100% h0 c0     
+q6         100% h0 c0      100% h0 c0      100% h0 c0      100% h0 c0     
+q7         100% h1 c0      100% h0 c0      100% h1 c0      100% h0 c0     
+
+totals    recall status_ok harm checks caught
+none        79%    36%      4     0      0
+intf        79%    79%      2     0      0
+agnt        86%    57%      4     4      2
+both       100%   100%      0     4      2
+
+interaction (both - intf - agnt + none)
+  recall     0.14
+  status_ok  0.00
+  harm       -2.00
+
+cell = status_ok, h = harmful facts shown as true, c = source re-reads
+
+$ node test/ablation.ts --cold
+intf path: fallback, ledger: cold per question
+
+question  none            intf            agnt            both            
+q1           0% h1 c0        0% h1 c0      100% h0 c4      100% h0 c4     
+q2           0% h1 c0      100% h0 c0        0% h1 c4      100% h0 c0     
+q3           0% h0 c0      100% h0 c0        0% h1 c4      100% h0 c0     
+q4           0% h0 c0      100% h0 c0        0% h1 c4      100% h0 c0     
+q5          50% h1 c0       50% h1 c0      100% h0 c2      100% h0 c2     
+q6         100% h0 c0      100% h0 c0      100% h0 c3      100% h0 c3     
+q7         100% h1 c0      100% h0 c0      100% h1 c3      100% h0 c0     
+
+totals    recall status_ok harm checks caught
+none        79%    36%      4     0      0
+intf        79%    79%      2     0      0
+agnt        86%    57%      4    24     11
+both       100%   100%      0     9      4
+
+interaction (both - intf - agnt + none)
+  recall     0.14
+  status_ok  0.00
+  harm       -2.00
+
+cell = status_ok, h = harmful facts shown as true, c = source re-reads
+
+$ node freshtime-intf/score.ts
+fallback: asof_mode 20/20  anchor 20/20  basis 20/20  avg 2 ms/question
+jev: asof_mode 19/20  anchor 20/20  basis 20/20  avg 112 ms/question
+  asof_mode: Tell me about the epsilon rollout -> current -..- default
+
+$ node --test per unit file (pass, todo)
+test/intf.test.ts ℹ pass 9 ℹ todo 0 
+test/agnt.test.ts ℹ pass 13 ℹ todo 0 
+test/ablation.test.ts ℹ pass 2 ℹ todo 0 
+test/kinds/gen-history.test.ts ℹ pass 2 ℹ todo 0 
+
+$ node freshtime-intf/probe.ts   (calls Jev live)
+group   rules           jev (raw, conf)       combined         question (run 1 of 1)
+trap    -- future   ok current 0.95  ok current  Will you tell me what alpha's status is?
+trap    -- future   ok current 0.99  ok current  I plan to ask about beta later, but what is gamma's 
+trap    -- future   -- past 0.88     -- future   Remind me what we decided about storage.
+trap    -- current  ok past 0.93     ok past     Was that still true at the time?
+trap    -- current  ok past 1.00     ok past     What was the current plan at that point?
+trap    -- past     ok mixed 0.95    ok mixed    What's different now compared with Oct 1?
+trap    -- past     ok mixed 0.95    ok mixed    Compared to where we were on Sep 30, where are we to
+trap    -- none     ok current 0.98  ok current  What's alpha's state of play these days?
+trap    -- current  ok past 0.99     ok past     I'm busy right now, but what was beta's plan back th
+trap    -- none     ok current 0.30  ok current  Has the next step for gamma changed?
+gap     -- current  ok past 0.99     -- current  Back when we still used Postgres, what was the cache
+gap     -- none     ok past 0.98     -- none     What did we believe before the launch?
+control ok current  ok current 1.00  ok current  What is alpha's status right now?
+control ok past     ok past 1.00     ok past     What was the plan for beta as of Oct 14?
+control ok range    ok range 0.93    ok range    What happened in September?
+control ok mixed    ok mixed 0.93    ok mixed    What changed for gamma since Oct 1?
+control ok future   ok future 0.95   ok future   Remind me next week to check the importer.
+control ok past     ok past 0.72     ok past     And for beta?
+notime  ok none     -- current 0.53  -- current  What color is the alpha logo?
+notime  ok none     ok none 0.96     ok none     Tell me a joke about databases.
+notime  ok none     ok none 0.57     ok none     Who founded the gamma project?
+
+accuracy by group (as-of mode; rules and combined also need the anchor)
+  trap     rules 0/10   jev 9/10   combined 9/10
+  gap      rules 0/2   jev 2/2   combined 0/2
+  control  rules 6/6   jev 6/6   combined 6/6
+  notime   rules 3/3   jev 2/3   combined 2/3
+
+where the combination lost what Jev had right, or Jev broke the rules:
+  guard or threshold kept the rules' wrong answer: Back when we still used Postgres, what was the cache plan?
+  guard or threshold kept the rules' wrong answer: What did we believe before the launch?
+  Jev overrode a right rules answer: What color is the alpha logo?
+
+$ corpus count: discoverSources + ingestPaths + summary into a temp ledger, FRESHTIME_JEV=off (keyword classes), counts only, run at commit 5c375b9 (ledger code unchanged since)
+{"files":70,"guides":13,"added":1914,"replaced":49,"total":1914,"byStatus":{"current":1587,"needs_check":278,"replaced":49},"byKind":{"decision":1798,"preference":78,"status":38},"kindPaths":{"keyword":1914},"secs":0}
+
+# Real-data runs, not re-run for this doc (they call live services). Aggregates read from their result files.
+$ e2e: summarize $TMPDIR/freshtime-e2e/*/results.json (newest normal run and the fallback run)
+2026-10-22T05-19-13-262Z: fallback=False runs=2 turns=14 overall_pass=14 cost_per_run=[0.063, 0.0615] traces=[{'total': 14, 'errors': 0}, {'total': 8, 'errors': 0}] reading_paths=['jev']   (results.json written 01:23 local, newest)
+2026-10-22T04-55-19-266Z-fallback (written 00:56 local, before commit e9ef5f7): fallback=True runs=1 turns=7 overall_pass=7 cost_per_run=[0.0541] traces=[{'total': 8, 'errors': 8}] reading_paths=['fallback']
+
+$ replay: aggregate lines from ~/.freshtime/replay/2026-10-22/report.md
+Classification: jev. Run time: 133 seconds.
+| git repos found                       | 77    |
+| qualifying sources found              | 50    |
+| sources used                          | 50    |
+| jev  | 3570  |
+Samples: 143. True positives: 9490.
+| (a) git-truth miss                | dating                    | 22    |
+| (b) rule-superseded while present | handoff_section           | 6416  |
+| (c) false positive                | backdated_not_yet_in_file | 345   |
+Precision: 0.9649. Precision excluding backdated lines: 1.
+Recall against git truth (rule-superseded excluded): 0.9977. Recall if rule-superseded were counted as misses: 0.5958.
+| all unique rule (d) cases    | 1842  | 1842            | 1     |
+| sample of 20 (evenly spaced) | 20    | 20              | 1     |
+Pairs: 479. Observations excluded as future-dated: 0.
+| status     | 7          | 10803 | 4672    | 1087    | 3189          | 0.1428    | 0.6136 | 0.1006       |
+| decision   | 90         | 2449  | 0       | 268     | 384           | -         | 0      | 0.1094       |
+| preference | 365        | 707   | 0       | 46      | 213           | -         | 0      | 0.0651       |
+| identity   | -          | 3456  | 0       | 133     | 1174          | -         | 0      | 0.0385       |
+| status     | 0.0685 (420/6131) | 0.116 (480/4138) | 0.3502 (187/534) | - (0/0) |
+| decision   | 0.0675 (87/1289)  | 0.1249 (108/865) | 0.2475 (73/295)  | - (0/0) |
+| preference | 0.0141 (6/427)    | 0.1323 (34/257)  | 0.2609 (6/23)    | - (0/0) |
+| identity   | 0.0444 (122/2747) | 0.0156 (11/703)  | 0 (0/6)          | - (0/0) |
+
+$ e2e run 2026-10-22T05-19-13-262Z, run 1, turn q1: reading and freshtime_ask statuses (the model passed the question without its last word)
+q1 'What is the next step for alpha': mode=current basis=default path=jev confidence=0.98 statuses={'current': 6, 'replaced': 2}
+
+$ gh issue list --state all
+#13 OPEN idea | Past questions with no date have no anchor
+#12 OPEN agent:todo | Rule (d) may replace handoff state across different units of work
+#11 OPEN idea | qmd as the retrieval candidate source
+#10 OPEN idea | Store adapters behind the ledger contract
+#9 OPEN idea | Fiscal calendar for business time
+#8 OPEN idea | Schedule intended time
+#7 OPEN agent:todo | Broaden replacement rules beyond Next: lines and checkboxes
+#6 OPEN agent:todo | Match reworded facts instead of exact lines
+#5 OPEN agent:todo | Classify re-ingested facts with Jev
+#4 OPEN agent:todo | Fit shelf lives from the checks table
+#3 OPEN agent:todo | Record verifications and replacements stated in conversation
+#2 CLOSED agent:todo | Ingest learning_guide.html files
+#1 OPEN agent:needs-input | Blind-labeled temporal intent question set
