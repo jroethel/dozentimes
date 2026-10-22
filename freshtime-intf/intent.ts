@@ -93,7 +93,9 @@ function derive(question: string, session: Session, cands: Cand[], ov: Overrides
     anchor = session.ambient;
     mode = anchor.start !== anchor.end ? "range" : "past";
   } else mode = "none";
-  if (ov.mode && !(anchor === null && ["past", "range", "mixed"].includes(ov.mode))) mode = ov.mode;
+  // An inherited reading is kept unless Jev says the question changes the period (replaceAmbient never reaches here).
+  // Jev's mode choice alone reads a follow-up like "and the next step for alpha?" as future, which drops the as-of.
+  if (ov.mode && basis !== "inherited" && !(anchor === null && ["past", "range", "mixed"].includes(ov.mode))) mode = ov.mode;
   if (basis === "inherited" && !["past", "range", "mixed"].includes(mode)) { basis = "default"; anchor = null; }
 
   let ambient = session.ambient;
