@@ -58,4 +58,6 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - [x] Jev probe (`npm run probe`, 21 contrived questions): traps worded to fool the rules score rules 0/10, Jev alone 9/10. The keyword "now" guard had thrown away three of Jev's right answers (combined 6/10). Changed: on the Jev path, "about right now?" is Jev's own judgment, not a keyword. Combined is now 9/10. score.ts, ablation --jev and e2e 14/14 unchanged.
 - Known Jev weakness: it reads "next step" as future at 0.9 confidence while its own now judgment says now (0.8). The combine uses the now judgment.
 - Contract gap: a past with no date ("before the launch", "back when we used Postgres") has no anchor, so it reads as now. Filed.
-- Next: design explanation with diagrams in the elucid-flow brand (fresh agent), then the open issues in a fresh session.
+- [x] Design explanation: docs/design/freshtime-design/ (HTML and 16-page PDF, elucid-flow), content master and claims ledger in docs/content/freshtime-design/. Known layout gap: PDF page 2 is mostly empty because Fig 1 is kept whole.
+- [x] Fallback path regression from the Jev combine change fixed ("Will the importer ship?" after a stated as-of read as inherited instead of future). Fallback e2e 7/7.
+- Next: the open issues (#3 to #7, #12, #13 idea) in a fresh session, gated by npm test, npm run probe, npm run e2e and npm run replay. #1 waits on Jeremy's blind questions.
