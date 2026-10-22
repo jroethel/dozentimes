@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twelve Times - share</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #0A0B0D; color: #EDEAE3; font: 16px/1.6 Menlo, monospace; margin: 0; padding: 48px 24px; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-family: Didot, "Didot LT STD", Georgia, serif; font-weight: 400; font-size: 44px; margin: 0 0 8px; }
+  .sub { color: rgba(237,234,227,0.55); margin-bottom: 32px; }
+  video { width: 100%; border-radius: 10px; background: #000; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0 8px; }
+  a.btn, button.btn { display: inline-block; padding: 12px 22px; border: 1px solid rgba(237,234,227,0.35); border-radius: 999px; color: #EDEAE3; text-decoration: none; font: inherit; cursor: pointer; background: transparent; }
+  a.btn:hover, button.btn:hover { border-color: #EDEAE3; }
+  .note { color: rgba(237,234,227,0.55); font-size: 13px; }
+  h2 { font-family: Didot, Georgia, serif; font-weight: 400; font-size: 26px; margin: 48px 0 12px; }
+  .cap { border: 1px solid rgba(237,234,227,0.18); border-radius: 10px; padding: 16px 18px; margin: 0 0 8px; white-space: pre-wrap; font-size: 14px; }
+  .caprow { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .caprow .lbl { width: 90px; color: rgba(237,234,227,0.55); font-size: 13px; }
+  .cap { flex: 1; }
+  button.mini { padding: 6px 14px; font-size: 12px; border-radius: 999px; border: 1px solid rgba(237,234,227,0.3); background: transparent; color: #EDEAE3; cursor: pointer; }
+  button.mini:hover { border-color: #EDEAE3; }
+  footer { margin-top: 56px; color: rgba(237,234,227,0.4); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Twelve Times</h1>
+  <div class="sub">60 seconds - the twelve kinds of time, each one proven. From test/kinds/ in freshtime.</div>
+
+  <video controls preload="metadata" poster="out/poster.jpg">
+    <source src="out/freshtime-twelve-times-1080p.mp4" type="video/mp4">
+  </video>
+
+  <div class="row">
+    <a class="btn" href="out/freshtime-twelve-times-1080p.mp4" download>Download master (1080p, 7 MB)</a>
+    <a class="btn" href="out/freshtime-twelve-times-social.mp4" download>Download social cut (4 MB)</a>
+  </div>
+  <div class="note">The master is the one to keep and play on a laptop. The social cut is the same video, smaller, for fast uploads.</div>
+
+  <h2>Post it</h2>
+  <div class="caprow">
+    <div class="lbl">X / Twitter</div>
+    <div class="cap" id="cap-x">"If I told you a dozen times, you'd remember."
+
+"When" is not one question. It's twelve - event, valid, record, source, reference, sequence, verification, access, volatility, intended, business, as-of.
+
+Sixty seconds, each one proven by a test. 🧵👇</div>
+    <button class="mini" onclick="cp('cap-x', this)">copy</button>
+  </div>
+  <div class="caprow">
+    <div class="lbl">LinkedIn</div>
+    <div class="cap" id="cap-li">You know what time it is. But "when" is not one question - it's twelve.
+
+When did it happen? When was it true? When did we learn it? When was the file last touched? What does "last week" point at? When the stamps tie, what breaks it? Who vouched, and when? When did we last look? How long until it goes stale? When should it become true? Which calendar is it? Which now are we reading in?
+
+Sixty seconds on the twelve kinds of time - and why agent memory needs all of them. Each one proven by a test in freshtime's test/kinds suite.</div>
+    <button class="mini" onclick="cp('cap-li', this)">copy</button>
+  </div>
+  <div class="caprow">
+    <div class="lbl">Slack</div>
+    <div class="cap" id="cap-sl">60 seconds on why "when" is twelve different questions - event, valid, record, and the rest - each proven by a test in test/kinds/. Drop the file straight into the channel; it plays inline.</div>
+    <button class="mini" onclick="cp('cap-sl', this)">copy</button>
+  </div>
+  <div class="note">Slack: drag the mp4 into a channel - it plays inline, no link needed. X and LinkedIn: attach the social cut (or the master - both are within their limits) with the caption above.</div>
+
+  <footer>freshtime - two time tools for agent memory, one contract. Rebuild any time: node video/src/render.ts</footer>
+</div>
+<script>
+function cp(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent.trim()).then(() => {
+    btn.textContent = "copied";
+    setTimeout(() => (btn.textContent = "copy"), 1200);
+  });
+}
+</script>
+</body>
+</html>

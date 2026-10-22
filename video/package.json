@@ -1,0 +1,14 @@
+{
+  "name": "freshtime-video",
+  "version": "1.0.0",
+  "scripts": {
+    "music": "node src/music.ts",
+    "render": "node src/render.ts",
+    "still": "node src/still.ts"
+  },
+  "type": "module",
+  "dependencies": {
+    "skia-canvas": "^4.0.0"
+  },
+  "private": true
+}
