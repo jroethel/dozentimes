@@ -1,0 +1,32 @@
+[
+  {
+    "q": "what did we do last week",
+    "now": "2026-10-22",
+    "start": "2026-10-12",
+    "end": "2026-10-18"
+  },
+  {
+    "q": "what did we do yesterday",
+    "now": "2026-10-22",
+    "start": "2026-10-21",
+    "end": "2026-10-21"
+  },
+  {
+    "q": "what was the plan two weeks ago",
+    "now": "2026-10-22",
+    "start": "2026-10-08",
+    "end": "2026-10-08"
+  },
+  {
+    "q": "what was the plan last week",
+    "now": "2026-10-26",
+    "start": "2026-10-19",
+    "end": "2026-10-25"
+  },
+  {
+    "q": "what was the plan last week",
+    "now": "2026-10-25",
+    "start": "2026-10-12",
+    "end": "2026-10-18"
+  }
+]

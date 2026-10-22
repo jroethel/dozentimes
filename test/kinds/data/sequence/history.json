@@ -1,0 +1,24 @@
+{
+  "commits": [
+    {
+      "date": "2026-10-09",
+      "files": {
+        "lantern/whats_next.md": "## 2026-10-09 session\n- Next: write the lantern parser\n- Next: write the lantern tests\n"
+      }
+    },
+    {
+      "date": "2026-10-09",
+      "message": "first handoff of the day",
+      "files": {
+        "lantern/docs/handoffs/2026-10-09-b.md": "## State\n- Lantern build is green on main\n"
+      }
+    },
+    {
+      "date": "2026-10-09",
+      "message": "second handoff of the day",
+      "files": {
+        "lantern/docs/handoffs/2026-10-09-a.md": "## State\n- Lantern build is red since the merge\n"
+      }
+    }
+  ]
+}

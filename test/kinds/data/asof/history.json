@@ -1,0 +1,22 @@
+{
+  "commits": [
+    {
+      "date": "2026-09-05",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-05 session\n- Next: draft the orchard importer\n"
+      }
+    },
+    {
+      "date": "2026-10-01",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-05 session\n- Next: draft the orchard importer\n\n## 2026-10-01 session\n- Next: review the orchard importer\n"
+      }
+    },
+    {
+      "date": "2026-10-20",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-05 session\n- Next: draft the orchard importer\n\n## 2026-10-01 session\n- Next: review the orchard importer\n\n## 2026-10-20 session\n- Next: ship the orchard importer\n"
+      }
+    }
+  ]
+}

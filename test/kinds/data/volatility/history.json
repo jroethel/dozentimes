@@ -1,0 +1,10 @@
+{
+  "commits": [
+    {
+      "date": "2026-10-01",
+      "files": {
+        "lantern/whats_next.md": "## 2026-10-01 session\n- Blocked on the lantern vendor reply\n- Decided to store lantern readings in sqlite\n- Lantern is a field sensor logger owned by the barn team\n"
+      }
+    }
+  ]
+}

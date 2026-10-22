@@ -1,0 +1,24 @@
+[
+  {
+    "q": "what did we decide in FY26",
+    "now": "2026-10-22",
+    "kinds": [
+      "business"
+    ],
+    "fy": {
+      "start": "2025-07-01",
+      "end": "2026-06-30"
+    }
+  },
+  {
+    "q": "what did we decide in Q3 FY26",
+    "now": "2026-10-22",
+    "kinds": [
+      "business"
+    ],
+    "fy": {
+      "start": "2026-01-01",
+      "end": "2026-03-31"
+    }
+  }
+]

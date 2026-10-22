@@ -1,0 +1,14 @@
+{
+  "commits": [
+    {
+      "date": "2026-08-01",
+      "files": {
+        "orchard/whats_next.md": "# Orchard notes\n- Decided orchard importer reads csv only\n- Orchard cache lives in sqlite\n"
+      }
+    }
+  ],
+  "mtimes": {
+    "orchard/whats_next.md": "2026-08-01"
+  },
+  "clone": true
+}

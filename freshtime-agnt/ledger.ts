@@ -147,14 +147,21 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
   const content = existsSync(path) ? readFileSync(path, "utf8") : null;
   const facts = content === null ? [] : extractFacts(path, content, mtime);
   let added = 0, replaced = 0;
-  const get = db.prepare("SELECT id FROM facts WHERE source_path = ? AND section = ? AND text = ?");
+  const get = db.prepare("SELECT id, invalid_at, replaced_by FROM facts WHERE source_path = ? AND section = ? AND text = ?");
+  // ponytail: a removed line that comes back is reopened, so the gap between removal and return is lost.
+  // Keep one row per validity window if gap history ever matters.
+  const reopen = db.prepare("UPDATE facts SET invalid_at = NULL WHERE id = ?");
   const ins = db.prepare(`INSERT INTO facts (project, section, text, source_path, kind, kind_path, valid_at, recorded_at, source_at, last_verified_at, verified_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'author')`);
   const seen = new Set<string>();
   const newIds: { id: number; f: ExtractedFact }[] = [];
   for (const f of facts) {
     seen.add(f.section + "\u0000" + f.text);
-    if (get.get(path, f.section, f.text)) continue;
+    const prior = get.get(path, f.section, f.text) as FactRow | undefined;
+    if (prior) {
+      if (prior.invalid_at && prior.replaced_by === null) reopen.run(prior.id);
+      continue;
+    }
     const c = kinds.get(f.text) ?? { kind: keywordKind(f.text), path: "keyword" as const };
     // Reading a line is not checking it: the last confirmation is when its author wrote it down.
     const r = ins.run(f.project, f.section, f.text, path, c.kind, c.path, f.valid_at, now, mtime, f.valid_at);
@@ -169,17 +176,15 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     const olds = db.prepare("SELECT id, text FROM facts WHERE source_path = ? AND invalid_at IS NULL AND text LIKE '[ ]%'").all(path) as FactRow[];
     for (const o of olds) if (o.text.replace(/^\[ \]\s*/, "") === body) replaced += mark.run(f.valid_at, id, o.id).changes as number;
   }
-  // (b) later-dated "Next:" replaces earlier ones in the same project
-  //     A same-day "Next:" earlier in the same file is replaced too, since files are written top to bottom.
+  // (b) a "Next:" is replaced by its successor in the same project: the next later-dated one, or the next one
+  //     further down the same file on the same day. Each closes at its successor's date, not the newest one's.
   const project = facts[0]?.project ?? projectOf(path);
-  const nexts = (db.prepare("SELECT id, text, valid_at, source_path FROM facts WHERE project = ? AND invalid_at IS NULL ORDER BY valid_at DESC, id DESC").all(project) as FactRow[])
+  const nexts = (db.prepare("SELECT id, text, valid_at, source_path FROM facts WHERE project = ? AND invalid_at IS NULL ORDER BY valid_at ASC, id ASC").all(project) as FactRow[])
     .filter((r) => NEXT_RE.test(r.text));
-  if (nexts.length > 1) {
-    const latest = nexts[0];
-    for (const o of nexts.slice(1)) {
-      if (o.valid_at < latest.valid_at || o.source_path === latest.source_path) replaced += mark.run(latest.valid_at, latest.id, o.id).changes as number;
-    }
-  }
+  nexts.forEach((o, i) => {
+    const succ = nexts.slice(i + 1).find((n) => n.valid_at > o.valid_at || n.source_path === o.source_path);
+    if (succ) replaced += mark.run(succ.valid_at, succ.id, o.id).changes as number;
+  });
   // (d) handoffs are snapshots: a state-like section in a later handoff replaces the same section in earlier ones
   if (isHandoff(path)) {
     const sections = new Set(facts.map((f) => f.section.toLowerCase()).filter((t) => STATE_SECTION.test(t)));

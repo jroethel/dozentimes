@@ -1,0 +1,16 @@
+{
+  "commits": [
+    {
+      "date": "2026-09-10",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-01 session\n- Decided orchard importer reads csv only\n"
+      }
+    },
+    {
+      "date": "2026-10-01",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-01 session\n- Decided orchard importer reads csv only\n\n## 2026-09-12 session\n- Decided orchard exporter writes json\n"
+      }
+    }
+  ]
+}

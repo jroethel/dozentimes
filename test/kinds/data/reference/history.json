@@ -1,0 +1,10 @@
+{
+  "commits": [
+    {
+      "date": "2026-09-07",
+      "files": {
+        "orchard/docs/handoffs/2026-09-07-plan.md": "## Plan\n- Next week we ship the orchard importer\n- Yesterday the orchard schema was frozen\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "commits": [
+    {
+      "date": "2026-10-01",
+      "files": {
+        "orchard/whats_next.md": "## 2026-10-01 session\n- [ ] ship the orchard importer\n- Decided orchard cache lives in sqlite\n"
+      }
+    }
+  ]
+}

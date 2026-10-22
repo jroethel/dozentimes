@@ -1,0 +1,34 @@
+{
+  "commits": [
+    {
+      "date": "2026-08-20",
+      "files": {
+        "orchard/whats_next.md": "## 2026-08-20 session\n- Orchard seed list import is in progress\n"
+      }
+    },
+    {
+      "date": "2026-08-28",
+      "files": {
+        "orchard/whats_next.md": "# Orchard notes\n"
+      }
+    },
+    {
+      "date": "2026-09-03",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-03 session\n- Decided orchard importer reads csv only\n"
+      }
+    },
+    {
+      "date": "2026-09-17",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-03 session\n- Decided orchard importer reads csv only\n\n## 2026-09-17 session\n- Decided orchard exporter writes json\n"
+      }
+    },
+    {
+      "date": "2026-10-05",
+      "files": {
+        "orchard/whats_next.md": "## 2026-09-03 session\n- Decided orchard importer reads csv only\n\n## 2026-09-17 session\n- Decided orchard exporter writes json\n\n## 2026-10-05 session\n- Orchard importer shipped on 2026-09-03 after review\n- Decided orchard cache lives in sqlite\n"
+      }
+    }
+  ]
+}

@@ -165,3 +165,16 @@ test("a state section in a later handoff replaces the same section in an earlier
   assert.notEqual(r.facts.find((f) => f.text.includes("merged and released"))?.status, "replaced");
   assert.notEqual(r.facts.find((f) => f.text.includes("TypeScript"))?.status, "replaced");
 });
+
+test("a removed line that comes back is current again", async () => {
+  const dir = tmp(), db = openDb(":memory:");
+  const body = "## 2026-10-01 session\n- keep the importer behind a flag\n";
+  const p = write(dir, "alpha/whats_next.md", body);
+  await ingestFile(db, p, "2026-10-02");
+  writeFileSync(p, "## 2026-10-01 session\n- something else entirely here\n");
+  await ingestFile(db, p, "2026-10-03");
+  assert.equal(read(db, "importer").facts[0]?.status, "replaced");
+  writeFileSync(p, body);
+  await ingestFile(db, p, "2026-10-04");
+  assert.equal(read(db, "importer").facts[0]?.status, "current");
+});
