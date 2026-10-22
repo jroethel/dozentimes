@@ -46,3 +46,8 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - The ablation reports a cold mode (fresh ledger per question) for re-read spend, because in the carried script one early "now" question pays for later checks.
 - The launcher passes `--no-skills`, so shared ~/.agents skills stay out of pi-time. It symlinks auth.json and fd from ~/.pi/agent, both gitignored.
 - The 20-question intent score (rules 20/20, Jev 19/20) is a regression check, not accuracy, because the labels were written next to the rules (issue #1).
+
+## 2026-10-22 test suites (in progress)
+- Asked: a pi-time end-to-end suite, a real-data replay from git, and a test method with data and generators for each of the twelve kinds.
+- Plan: docs/plans/2026-10-22.test-suites.md. Three workers build test/kinds/, test/replay/ and test/e2e/ in parallel.
+- Recommendation given: the six open issues go to a fresh session after the suites land, gated by them.

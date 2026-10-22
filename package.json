@@ -3,8 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/",
-    "ablation": "node test/ablation.report.ts"
+    "test": "node --test \"test/**/*.test.ts\"",
+    "ablation": "node test/ablation.report.ts",
+    "e2e": "node test/e2e/run.ts",
+    "replay": "node test/replay/replay.ts",
+    "kinds": "node test/kinds/report.ts"
   },
   "dependencies": {
     "chrono-node": "^2.7.7"
