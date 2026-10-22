@@ -163,7 +163,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 <dt>The 7-day status shelf life is too short on real data.</dt>
 <dd>The replay with Jev classes found 4,672 status facts flagged and 14% of them changed in git. The share changed was 7% at 0 to 7 days and 35% at 31 to 90 days. The data is on issue #4.</dd>
 <dt>Test runs must not leave a ledger in the user's home.</dt>
-<dd>A worker's pi run without <code>FRESHTIME_DB</code> created <code>~/.freshtime/ledger.db</code>. It was deleted so Jeremy's first run is still a first run.</dd>
+<dd>During the worker runs something created <code>~/.freshtime/ledger.db</code> with the real corpus (most likely a pi run without <code>FRESHTIME_DB</code>, not traced). It was deleted so Jeremy's first run is still a first run.</dd>
 </dl>
 </section>
 
