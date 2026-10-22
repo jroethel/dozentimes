@@ -92,6 +92,7 @@ function derive(question: string, session: Session, cands: Cand[], ov: Overrides
     else mode = cand.start !== cand.end ? "range" : "past";
     if (ov.mode) mode = ov.mode;
   } else if (nowAny) mode = "current";
+  else if (!jev && future) mode = "future"; // the rules read "will" as the future even mid-conversation
   else if (session.ambient && !ov.replaceAmbient) {
     // An inherited reading is kept unless Jev says the question changes the period. Jev's mode choice alone
     // reads "and the next step for alpha?" as future, because of the word "next".

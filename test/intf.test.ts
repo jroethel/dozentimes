@@ -83,3 +83,8 @@ test("parseIntent with jev:false equals fallback and writes a trace", async () =
   const row = db.prepare("SELECT tool, path FROM traces").get() as { tool: string; path: string };
   assert.deepEqual({ ...row }, { tool: "intf.parse", path: "fallback" });
 });
+
+test("fallback: a future word beats an inherited as-of", () => {
+  const s1 = fallbackIntent("As of Oct 14, what was the plan for beta?", { now: "2026-10-22", ambient: null }).session;
+  assert.equal(fallbackIntent("Will the importer ship?", s1).intent.asof_mode, "future");
+});
