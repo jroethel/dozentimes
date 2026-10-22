@@ -22,6 +22,18 @@ The first run builds the ledger at `~/.freshtime/ledger.db` from `whats_next.md`
 It then lists the remaining work.
 Set `FRESHTIME_ROOTS` (colon-separated) to scan other folders, and `FRESHTIME_DB` to use another ledger file.
 
+To run pi-time from any branch, whatever this checkout has out, install the branch launcher once:
+
+```sh
+install -m 755 pi-time/pi-time-branch ~/.local/bin/pi-time
+pi-time                            # main, with the real ledger
+pi-time --branch feat/some-branch  # a branch under test, with its own ledger
+```
+
+Each branch runs from a detached worktree under `~/.freshtime/worktrees/`, moved to the branch tip on every launch, so only committed code runs.
+A branch other than main gets its own ledger under `~/.freshtime/branches/`, so testing it cannot change `~/.freshtime/ledger.db`.
+Set `FRESHTIME_HOME` if the repo is not at `~/create/freshtime`.
+
 Inside pi-time:
 
 - Every prompt gets a time reading, such as "answering as of 2026-10-14 (inherited from earlier)", shown in the status line.
