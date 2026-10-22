@@ -6,7 +6,7 @@ import { tmpdir, homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import type { Volatility } from "../../freshtime-core/index.ts";
 import { SHELF_LIFE_DAYS, addDays, daysBetween, isoDate, openDb, parseIso } from "../../freshtime-core/index.ts";
-import { extractFacts, ingestFile } from "../../freshtime-agnt/ledger.ts";
+import { extractFacts, handoffSlug, ingestFile } from "../../freshtime-agnt/ledger.ts";
 
 // ---------- args ----------
 const argv = process.argv.slice(2);
@@ -144,7 +144,6 @@ const newAsOf = (): AsOf => ({ samples: 0, tp: 0, fp: 0, fn: 0, ruleSuperseded: 
 // A rule-superseded fact seen at least once, for the rule (d) over-reach check and --show-sample.
 // closed and by hold fact text, so they stay in memory and only --show-sample prints them.
 interface Case { rule: string; diffFile: boolean; diffSlug: boolean; closed: string; by: string; slug: string; bySlug: string }
-const slugOf = (rel: string): string => basename(rel, ".md").replace(/^\d{4}-\d{2}-\d{2}[-_ ]?/, "");
 
 function truthOf(dir: string, v: Version): Set<string> {
   const s = new Set<string>();
@@ -181,8 +180,8 @@ function asOfCheck(dir: string, versions: Version[], rows: Row[], a: AsOf, cases
         const sup = byId.get(r.replaced_by);
         const rule = r.closed_by;
         bump(a.ruleCause, rule);
-        if (!cases.has(r.id)) cases.set(r.id, { rule, diffFile: !!sup && sup.rel !== r.rel, diffSlug: !!sup && slugOf(sup.rel) !== slugOf(r.rel),
-          closed: r.text, by: sup?.text ?? "", slug: slugOf(r.rel), bySlug: sup ? slugOf(sup.rel) : "" });
+        if (!cases.has(r.id)) cases.set(r.id, { rule, diffFile: !!sup && sup.rel !== r.rel, diffSlug: !!sup && handoffSlug(sup.rel) !== handoffSlug(r.rel),
+          closed: r.text, by: sup?.text ?? "", slug: handoffSlug(r.rel), bySlug: sup ? handoffSlug(sup.rel) : "" });
         continue;
       }
       a.fn++;

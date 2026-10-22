@@ -20,6 +20,19 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/;
 const NEXT_RE = /^(\[[ xX]\]\s*)?[*_]*next[*_]*\s*:/i;
 const STATE_SECTION = /\b(state|status|next|open|blocked|recent|remaining|resume|current)\b/i;
 const isHandoff = (p: string): boolean => /\/docs\/handoffs\/[^/]+\.md$/.test(p) || basename(p) === "HANDOFF.md";
+// The unit of work a handoff is about: "2026-10-01.i4-t1-parser.resume.md" -> "i4-t1-parser".
+export const handoffSlug = (p: string): string =>
+  basename(p, ".md").replace(/\.resume$/, "").replace(/^\d{4}-\d{2}-\d{2}[.\-_ ]?/, "");
+
+// A text names a handoff when the handoff's file name (without .md, starting with a date) appears in it as a whole token.
+const NAME_CH = /[\p{L}\p{N}_-]/u;
+const datedName = (p: string): boolean => /^\d{4}-\d{2}-\d{2}/.test(basename(p));
+function namesHandoff(text: string, path: string): boolean {
+  const stem = basename(path, ".md");
+  for (let i = text.indexOf(stem); i >= 0; i = text.indexOf(stem, i + 1))
+    if (!NAME_CH.test(text[i - 1] ?? "") && !NAME_CH.test(text[i + stem.length] ?? "")) return true;
+  return false;
+}
 
 export function projectOf(path: string): string {
   const dir = dirname(path);
@@ -186,17 +199,41 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     const succ = nexts.slice(i + 1).find((n) => n.valid_at > o.valid_at || n.source_path === o.source_path);
     if (succ) replaced += mark.run(succ.valid_at, succ.id, "next", o.id).changes as number;
   });
-  // (d) handoffs are snapshots: a state-like section in a later handoff replaces the same section in earlier ones
+  // (d) handoffs are snapshots of one unit of work. Handoff H continues handoff E in the same project when they
+  //     share a slug and E is dated earlier, or H's text names E's file and E is not dated later. A state-like
+  //     section of E is closed by the latest H that continues it (by date, then path). This file is checked both
+  //     as H and as E, so the result does not depend on ingest order.
   if (isHandoff(path)) {
+    const texts = new Map<string, string | null>([[path, content]]);
+    const textOf = (p: string): string => {
+      if (!texts.has(p)) texts.set(p, existsSync(p) ? readFileSync(p, "utf8") : null);
+      return texts.get(p) ?? "";
+    };
+    // Per section: a handoff's date and its first fact there. Rows a rule (c) removal closed do not count.
+    const inSection = db.prepare(`SELECT MAX(valid_at) AS date, MIN(id) AS first FROM facts
+      WHERE source_path = ? AND lower(section) = ? AND (invalid_at IS NULL OR closed_by IS NOT 'removed')`);
+    const liveIn = db.prepare("SELECT id FROM facts WHERE source_path = ? AND lower(section) = ? AND invalid_at IS NULL");
+    const others = (db.prepare("SELECT DISTINCT source_path FROM facts WHERE project = ? AND source_path <> ?").all(project, path) as FactRow[])
+      .map((r) => r.source_path as string).filter(isHandoff);
     const sections = new Set(facts.map((f) => f.section.toLowerCase()).filter((t) => STATE_SECTION.test(t)));
     for (const sec of sections) {
-      const rows = (db.prepare("SELECT id, valid_at, source_path FROM facts WHERE project = ? AND lower(section) = ? AND invalid_at IS NULL ORDER BY valid_at DESC, id ASC").all(project, sec) as FactRow[])
-        .filter((r) => isHandoff(r.source_path));
-      const latest = rows[0];
-      if (!latest) continue;
-      for (const o of rows) {
-        if (o.valid_at < latest.valid_at && o.source_path !== latest.source_path) replaced += mark.run(latest.valid_at, latest.id, "handoff_section", o.id).changes as number;
-      }
+      const at = new Map<string, { date: string | null; first: number | null }>();
+      const info = (p: string) => at.get(p) ?? at.set(p, inSection.get(p, sec) as any).get(p)!;
+      const continues = (h: string, e: string): boolean => {
+        const dh = info(h).date, de = info(e).date;
+        if (dh === null || de === null) return false;
+        if (handoffSlug(h) === handoffSlug(e)) return de < dh; // same slug and same date never replace
+        return de <= dh && datedName(e) && namesHandoff(textOf(h), e);
+      };
+      const close = (e: string, h: string): void => {
+        for (const r of liveIn.all(e, sec) as FactRow[]) replaced += mark.run(info(h).date, info(h).first, "handoff_section", r.id).changes as number;
+      };
+      // this file as E: the latest other handoff that continues it closes its section
+      const later = others.filter((h) => continues(h, path))
+        .sort((a, b) => (info(a).date! < info(b).date! ? -1 : info(a).date! > info(b).date! ? 1 : a < b ? -1 : 1)).at(-1);
+      if (later) close(path, later);
+      // this file as H: it closes the section in every earlier handoff it continues
+      for (const e of others) if (continues(path, e)) close(e, path);
     }
   }
   // (c) lines gone from the file
