@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning Guide - freshtime pi-time POC (2026-10-21 to 2026-10-22)</title>
+<style>
+:root {
+  --ink: #2b2b2b; --muted: #6b6b60; --accent: #4a6b57;
+  --bg: #faf9f5; --card: #ffffff; --line: #e4e1d7;
+}
+body {
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--ink); background: var(--bg);
+  max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem;
+  line-height: 1.6;
+}
+h1 { font-size: 1.7rem; margin-bottom: 0.2rem; }
+.subtitle { color: var(--muted); margin-top: 0; }
+h2 {
+  font-size: 1.15rem; color: var(--accent);
+  border-bottom: 1px solid var(--line); padding-bottom: 0.3rem; margin-top: 2.5rem;
+}
+section.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.2rem 1.2rem 0.8rem; margin: 1rem 0;
+}
+dt { font-weight: 600; margin-top: 0.9rem; }
+dd { margin: 0.15rem 0 0 0; color: #444; }
+.why { color: var(--muted); font-size: 0.92rem; }
+code { background: #f0eee6; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95rem; }
+th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Learning Guide</h1>
+<p class="subtitle">freshtime pi-time proof of concept, build session 2026-10-21 to 2026-10-22, branch <code>feat/pi-time-poc</code></p>
+
+<h2>1. Project summary and scope</h2>
+<section class="card">
+<dl>
+<dt>Two time tools share one contract, and pi-time runs both inside pi.</dt>
+<dd><code>freshtime-intf</code> turns a question plus conversation state into a <code>TemporalIntent</code> (as-of mode, anchor, basis). <code>freshtime-agnt</code> is a freshness ledger of dated facts with a volatility class, last-verified date and status. <code>freshtime-core</code> holds the contract, SQLite schema, traces and Jev client. <code>./pi-time/pi-time</code> launches pi with its own agent dir and the <code>freshtime</code> extension.</dd>
+<dd class="why">The design is the "Two tools, one contract" sketch from research/memory-systems-oct2026/time-coverage.html, built backwards from a test.</dd>
+<dt>The ledger reads Jeremy's own project docs and keeps the result outside the repo.</dt>
+<dd>Sources are <code>whats_next.md</code>, <code>HANDOFF.md</code>, <code>docs/handoffs/*.md</code> and <code>learning_guide*.html</code> under <code>~/create</code> and <code>~/repos</code>. The ledger lives at <code>~/.freshtime/ledger.db</code>.</dd>
+<dd class="why">The repo stays public at Jeremy's choice, so no extracted fact, session transcript or auth link may enter git.</dd>
+</dl>
+</section>
+
+<h2>2. Architectural principles that emerged</h2>
+<section class="card">
+<dl>
+<dt>Code finds candidates and does date arithmetic, Jev only judges.</dt>
+<dd>chrono-node parses date phrases. Jev picks the as-of mode, picks an anchor from the parsed candidates (never writes a date), and answers whether a question changes the period. Every Jev call has a deterministic fallback.</dd>
+<dt>A fact is last confirmed when its author wrote it, not when the ledger read it.</dt>
+<dd>At ingest <code>last_verified_at</code> is the fact's <code>valid_at</code> and <code>verified_by</code> is <code>author</code>. Only a source re-read moves it to today with <code>verified_by = source</code>.</dd>
+<dd class="why">Found in the first interactive run on 2026-10-22: the status line said "0 stale" across 809 facts because ingest stamped every fact as verified today. After the fix, 342 were stale.</dd>
+<dt>An inherited as-of date survives unless the question changes the period.</dt>
+<dd>Jev's mode choice cannot override an inherited reading. Only the "does this question change the period" judgment can.</dd>
+<dd class="why">Live Jev read the follow-up "And the next step for alpha?" as a future question and dropped the inherited 2026-10-14, which made the Jev ablation lose one question. The fallback rules had it right.</dd>
+<dt>Handoffs are snapshots, so a later handoff's state section replaces the earlier one.</dt>
+<dd>State-like sections (State, Next step, Recent artifacts, Open ...) in a later-dated handoff of the same project replace that section in earlier handoffs. Within one file, an earlier same-day <code>Next:</code> line is replaced by a later one.</dd>
+<dd class="why">Before this rule, 0 of 809 real facts were ever replaced, because real handoffs use section headings where the rule only knew <code>Next:</code> lines. After it, 48 were.</dd>
+<dt>Every Jev failure is loud.</dt>
+<dd>A failed call writes a trace row with the error, the status line shows <code>jev FALLBACK n</code>, and <code>/freshtime trace</code> shows the row as ERROR. The answer still arrives on the fallback path.</dd>
+<dd class="why">Checked on 2026-10-22 by launching pi-time with a bad <code>TYPESAFE_API_KEY</code>.</dd>
+</dl>
+</section>
+
+<h2>3. Design-process learnings</h2>
+<section class="card">
+<dl>
+<dt>Score fact choice, status labels, harm and re-reads separately, or the 1+1=3 result is rigged.</dt>
+<dd>A single "right fact with the right status" score gives each tool half of a conjunction, so a positive interaction is guaranteed by construction. Measured separately, status accuracy only adds up (interaction 0.00), and harm drops by more than the sum (interaction -2).</dd>
+<dd class="why">Raised by the advisor before the test was written. The honest result is the stronger one: the ledger alone removes no harm, because it shows the newest fact as true for past questions.</dd>
+<dt>Re-read spend depends on question order, so it needs a cold mode.</dt>
+<dd>In the carried script, one early "now" question freshens the facts later questions use, so ledger-only and both spent the same 4 re-reads. With a fresh ledger per question (<code>--cold</code>), ledger-only spends 24 and both spend 9.</dd>
+<dd class="why">The first test asserted <code>both.checks &lt; agnt.checks</code> on the carried script and would have failed. The assertion moved to the cold run, where it measures what it claims.</dd>
+<dt>A score on labels written next to the rules is a regression check, not accuracy.</dt>
+<dd>The rules scored 20/20 and Jev 19/20 on 20 labeled intent questions, but the labels and rules came from the same worker. Issue #1 asks for a blind set.</dd>
+<dt>Assert the mechanism, not a coincidence of the fixtures.</dt>
+<dd>An early assertion <code>agnt.harm == none.harm</code> held only because the two were wrong on different facts. The test now checks per question: ledger-only has harm on the past and inherited questions (q2 to q4) and none on the "now" one (q1).</dd>
+</dl>
+</section>
+
+<h2>4. User preferences (carry into future sessions)</h2>
+<section class="card">
+<dl>
+<dt>Jeremy wants to be hands off and to learn what remains when he first runs pi-time.</dt>
+<dd>Startup lists open GitHub issues (needs-input first, then <code>agent:todo</code>, then a count of ideas), falling back to <code>REMAINING.md</code> when <code>gh</code> fails.</dd>
+<dt>The repo stays public, the branch may be pushed, and issues may be filed without asking.</dt>
+<dd>Answered 2026-10-21. A merge to <code>main</code> still needs his yes.</dd>
+<dt>Use real project docs for the demo, including learning guides.</dt>
+<dd>He said "find learning_guide's". An early build filed learning guides as a later issue, and that narrowed his request. The extractor was built in the same session and the issue closed.</dd>
+<dt>Jev live with fallback, and zai glm-5.3 for pi-time.</dt>
+<dd>Answered 2026-10-21.</dd>
+</dl>
+</section>
+
+<h2>5. Key decisions register</h2>
+<section class="card">
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr><td>TypeScript on Node 26 for everything</td><td>Python core with a TS shim, Rust</td><td>pi extensions load TS in-process. Rust is not installed. One language avoids a process boundary.</td></tr>
+<tr><td><code>node:sqlite</code> with FTS5</td><td>DuckDB, qmd for retrieval</td><td>Built in, no native build, verified inside pi. qmd is parked as issue #11.</td></tr>
+<tr><td>Shelf lives from scorer.py (status 7, decision 90, preference 365 days, identity none)</td><td>Fitted rates</td><td>No check history yet. The <code>checks</code> table collects it for issue #4.</td></tr>
+<tr><td>Verification by re-reading the source file and re-ingesting when its hash changed</td><td>Asking the person, git log dates</td><td>Deterministic and cheap. It catches appended sessions, not just deleted lines.</td></tr>
+<tr><td>Retrieval takes a text-match pool of 5x the limit, then prefers live and newer facts</td><td>Pure bm25</td><td>Pure bm25 answered "current state of vaultwise" from a 2026-10-14 handoff when a 2026-10-21 one existed.</td></tr>
+<tr><td>Launcher passes <code>--no-skills</code> and symlinks <code>auth.json</code> and <code>fd</code></td><td>Copying auth, letting pi download fd</td><td>The first run showed every shared skill with parse warnings and downloaded fd into the repo.</td></tr>
+</table>
+</section>
+
+<h2>6. Ablation result (synthetic fixtures)</h2>
+<section class="card">
+<table>
+<tr><th>Config</th><th>Right status</th><th>Wrong facts shown as true</th><th>Re-reads, cold</th></tr>
+<tr><td>none</td><td>36%</td><td>4</td><td>0</td></tr>
+<tr><td>intf</td><td>79%</td><td>2</td><td>0</td></tr>
+<tr><td>agnt</td><td>57%</td><td>4</td><td>24</td></tr>
+<tr><td>both</td><td>100%</td><td>0</td><td>9</td></tr>
+</table>
+<dl>
+<dt>The fixtures prove the mechanism, not a rate on real data.</dt>
+<dd>Seven questions over three synthetic projects, two of them edited after ingest. Run <code>node test/ablation.ts</code>, <code>--cold</code> or <code>--jev</code>.</dd>
+</dl>
+</section>
+
+<h2>7. Operational learnings</h2>
+<section class="card">
+<dl>
+<dt>Run pi in json mode with stdin closed.</dt>
+<dd><code>pi --mode json ... &lt; /dev/null</code>. Without the redirect it hung from a non-TTY harness. Assert on <code>tool_execution_end</code> records.</dd>
+<dt>In the TUI, never mirror extension output to stderr.</dt>
+<dd>Stderr lines tear the pi screen. The extension writes to stderr only when <code>ctx.hasUI</code> is false.</dd>
+<dt>Test the first run on a throwaway ledger so the real first run stays a first run.</dt>
+<dd>Every E2E used <code>FRESHTIME_DB</code> in <code>$TMPDIR</code>. <code>~/.freshtime</code> does not exist yet.</dd>
+<dt>pi rewrites its settings file.</dt>
+<dd>pi adds <code>lastChangelogVersion</code> to <code>pi-time/agent/settings.json</code>, so the committed copy includes it.</dd>
+<dt>A herdr side pane is the closest thing to Jeremy's own first run.</dt>
+<dd><code>herdr pane run</code> to launch, <code>herdr agent prompt --wait</code> to ask, <code>herdr pane read</code> to see the screen. This is how the stale count, the torn screen and the fd download were found.</dd>
+</dl>
+</section>
+
+<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Companion docs live in <code>docs/plans/2026-10-22.pi-time-poc.md</code>, <code>docs/research/</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
+</body>
+</html>
