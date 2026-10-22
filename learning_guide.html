@@ -167,6 +167,27 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
-<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session: section 8 added. Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
+<h2>9. Updates - the video, A Dozen Times (2026-10-22)</h2>
+<section class="card">
+<dl>
+<dt>One timeline file keeps picture, sound and docs in sync by construction.</dt>
+<dd><code>video/dozen/src/timeline.ts</code> holds every scene time, word and sound cue. The painters and the score both read it, so a cue moved once moves in both. The as-of flap times are solved from the scrub easing and stored there too, instead of being estimated in two places.</dd>
+<dt>Sub-frame motion blur steps on thin strokes at whip speed.</dt>
+<dd>At the whip spin, 8 and then 24 sub-frames still left month labels as stepped copies, because each stroke is narrower than the gap between sub-frames. Halving the ring's own wind-up and adding a blur that scales with speed made it read as a smear. The still renderer never runs sub-frames, so this only showed on frames pulled from the encoded preview.</dd>
+<dd class="why">Caught because the advisor asked for frames at the fastest moments before the 4K render, not after.</dd>
+<dt>Canvas blur is in device pixels, letter spacing is not.</dt>
+<dd>In skia-canvas, <code>ctx.filter = "blur(r)"</code> ignores the scale transform while <code>letterSpacing</code> follows it. A <code>blurPx</code> helper scales blur by the render scale, so 1080p QC frames and the 4K master look the same.</dd>
+<dt>A mix can be checked without listening.</dt>
+<dd>The first score had its lows 10 dB over the mids, which laptop speakers would mostly lose. Band levels (below 150 Hz, 150 Hz to 2 kHz, above 2 kHz), a spectrogram, and momentary loudness against the 3-second level found it, and the same checks found the twelve hook pings jumping 7.7 LU over a quiet bed.</dd>
+<dt>RGB frames need an explicit BT.709 matrix on the way to YUV.</dt>
+<dd>The encode converts with <code>scale=out_color_matrix=bt709</code> and tags BT.709. A pixel comparison of an encoded frame against the source frame matched within 1 level of 255.</dd>
+<dt>Search summaries misattribute quotes.</dt>
+<dd>Two of three trend claims in a search summary came from a different page than the one it implied, and the third was on neither page fetched. Each quote in the storyboard was fetched from its page before it shipped, and the unconfirmed one was cut.</dd>
+<dt>A re-issued prompt with an earlier result on disk reads as a miss.</dt>
+<dd>The same request had already produced a cut in <code>video/</code>. It was kept, its source committed, and the new film built beside it instead of patched, so both can be compared.</dd>
+</dl>
+</section>
+
+<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8) and the video session (section 9). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
 </body>
 </html>

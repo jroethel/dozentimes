@@ -137,12 +137,12 @@ export function hook(ctx: Ctx, t: number) {
   ctx.scale(Z, Z);
   ctx.translate(-P1.x, -P1.y);
 
-  // a faint clock face, there from the first frame, brightens when the twelve land
+  // a faint clock face, there from the first frame, brightens when the twelve land; its hour ticks sit under the words
   const face = 0.06 + 0.16 * ph(t, 3.4, 4.3);
   for (let i = 0; i < 60; i++) {
-    const a = (i / 60) * TAU + t * 0.02;
-    const r0 = i % 5 === 0 ? 452 : 462;
-    line(ctx, 960 + Math.cos(a) * r0, 540 + Math.sin(a) * r0, 960 + Math.cos(a) * 474, 540 + Math.sin(a) * 474, p.ink, i % 5 === 0 ? 2.5 : 1.5, face);
+    const a = (i / 60) * TAU;
+    const r0 = i % 5 === 0 ? 474 : 486;
+    line(ctx, 960 + Math.cos(a) * r0, 540 + Math.sin(a) * r0, 960 + Math.cos(a) * 498, 540 + Math.sin(a) * 498, p.ink, i % 5 === 0 ? 2.5 : 1.5, face);
   }
 
   const big = serif(104), bigI = serif(104, true);
@@ -938,7 +938,7 @@ export function busRotation(lt: number) {
   const s = KINDS[10].start, C = CUE.bus;
   const base = -(APR6 / 365) * TAU * ease.spring(inv(C.rotate - s, C.lock - s + 0.2, lt));
   // the whip winds the ring up before the cut
-  return base - Math.pow(ph(lt, 3.35, 3.9, ease.lin), 2.2) * TAU * 0.9;
+  return base - Math.pow(ph(lt, 3.35, 3.9, ease.lin), 2.2) * TAU * 0.3;
 }
 
 export function ringShape(ctx: Ctx, rot: number, p: Pal, a: number, circle = true, labels = true) {

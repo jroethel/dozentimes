@@ -61,3 +61,13 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - [x] Design explanation: docs/design/freshtime-design/ (HTML and 16-page PDF, elucid-flow), content master and claims ledger in docs/content/freshtime-design/. Known layout gap: PDF page 2 is mostly empty because Fig 1 is kept whole.
 - [x] Fallback path regression from the Jev combine change fixed ("Will the importer ship?" after a stated as-of read as inherited instead of future). Fallback e2e 7/7.
 - Next: the open issues (#3 to #7, #12, #13 idea) in a fresh session, gated by npm test, npm run probe, npm run e2e and npm run replay. #1 waits on Jeremy's blind questions.
+
+## 2026-10-22 video: A Dozen Times
+- Asked: a 60-second motion-graphics video on the twelve kinds of time, with a microscript per scene, original or copyright-free sound, laptop quality and an easy upload path, built with no further input.
+- Built in `video/dozen/` as a new film, because the earlier cut in `video/` was dim, used small type and explained test fixtures.
+  The earlier cut is kept and its source is committed.
+- Storyboard, microscript, transitions, sound cues and claims with sources: `video/dozen/storyboard.md`.
+  Rebuild and posting guide: `video/dozen/README.md`.
+  Local share page with draft post text: `video/dozen/share.html`.
+- Outputs (not in git): `video/dozen/out/a-dozen-times-4k60.mp4`, `a-dozen-times-1080p.mp4`, `poster.jpg`.
+- Not built: a native vertical (9:16) cut for Reels, TikTok and Shorts.

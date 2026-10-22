@@ -1,0 +1,81 @@
+1
+00:00:00,250 --> 00:00:02,600
+If I've told you once,
+I've told you a dozen times.
+
+2
+00:00:03,300 --> 00:00:04,250
+Literally.
+
+3
+00:00:04,400 --> 00:00:05,900
+Twelve kinds of time.
+
+4
+00:00:06,100 --> 00:00:09,300
+Event time. When did it happen?
+Apollo 11 landed at 20:17 UTC, July 20, 1969.
+
+5
+00:00:10,100 --> 00:00:13,400
+Valid time. When was it true?
+Pluto was a planet from 1930 to 2006. Facts expire.
+
+6
+00:00:14,100 --> 00:00:17,500
+Record time. When did we find out?
+A star exploded around 166,000 BC. Its light was seen in 1987.
+
+7
+00:00:18,100 --> 00:00:21,400
+Source time. When was it made?
+A photo from 2019, downloaded today, is still from 2019. A copy isn't new.
+
+8
+00:00:22,100 --> 00:00:25,300
+Reference time. Which day is "tomorrow"?
+Written on Mar 3, it means Mar 4. Read on Mar 9, it seems to mean Mar 10.
+
+9
+00:00:26,100 --> 00:00:29,400
+Sequence time. Which came first?
+Two events at 09:00:00 tie. Clocks tie. Order doesn't. (Lamport, 1978)
+
+10
+00:00:30,100 --> 00:00:33,300
+Verification time. Last checked when?
+An elevator passed inspection in Mar 2024. True when checked. Unknown since.
+
+11
+00:00:34,100 --> 00:00:37,300
+Access time. Last looked at when?
+Files sorted by last opened. Read most, check first.
+
+12
+00:00:38,100 --> 00:00:41,300
+Volatility. Shelf life?
+A status goes stale in 7 days, a decision in 90, a name never. Facts have half-lives.
+
+13
+00:00:42,100 --> 00:00:45,300
+Intended time. When should it happen?
+"Remind me next Tuesday." It points forward.
+
+14
+00:00:46,100 --> 00:00:49,400
+Business time. Which calendar?
+The UK tax year starts on April 6. A leftover from 1752.
+
+15
+00:00:50,100 --> 00:00:53,400
+As-of time. From which "now"?
+How many planets? As of 2005, nine. As of today, eight.
+
+16
+00:00:55,000 --> 00:00:56,600
+Event, valid, record, source, reference, sequence,
+verification, access, volatility, intended, business, as-of.
+
+17
+00:00:56,650 --> 00:00:59,500
+There. Now I've told you a dozen times.

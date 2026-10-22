@@ -214,11 +214,11 @@ for (let b = 0; b < 12; b++) {
   if (t === 3.5 || t === 4.0) continue; // a held breath for "Literally."
   put(tick(b % 2 ? 2300 : 3300), t, 0.22 + b * 0.012, b % 2 ? 0.25 : -0.25, 0.08);
 }
-put(pad([50, 57, 62], 5.6, 500, 1100, 1.5, 1.0), 0.3, 0.12, 0, 0.35, false);
+put(pad([50, 57, 62], 5.6, 500, 1100, 1.5, 1.0), 0.3, 0.17, 0, 0.35, false);
 put(noiseSweep(0.55, 700, 2600, 1.2, (u) => Math.sin(Math.PI * u) ** 2), CUE.hook.line1 - 0.05, 0.05, -0.3, 0.3);
 put(noiseSweep(0.55, 800, 3000, 1.2, (u) => Math.sin(Math.PI * u) ** 2), CUE.hook.line2 - 0.05, 0.05, 0.3, 0.3);
 const PINGS = [74, 77, 79, 81, 84, 86, 89, 91, 93, 96, 98, 101];
-PINGS.forEach((m, i) => put(bell(mtof(m), 1.6, 3.5, 1.4, 0.45), CUE.hook.fan + i * 0.06 + 0.04, 0.11, -0.6 + (i / 11) * 1.2, 0.35));
+PINGS.forEach((m, i) => put(bell(mtof(m), 1.6, 3.5, 1.4, 0.45), CUE.hook.fan + i * 0.06 + 0.04, 0.055, -0.6 + (i / 11) * 1.2, 0.35));
 put(pad([50, 53, 57, 60, 64], 1.7, 400, 2200, 1.2, 0.6), CUE.hook.title, 0.2, 0, 0.35);
 put(noiseSweep(1.0, 300, 6000, 0.9, (u) => u ** 2.2), 5.0, 0.16, 0, 0.2);
 put(reverse(bell(mtof(MELODY[0]), 1.0, 3.5, 2, 0.5)), 5.0, 0.12, 0, 0.3);

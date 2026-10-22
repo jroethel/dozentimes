@@ -77,19 +77,19 @@ export const OUTRO_COPY = ["There.", "Now I've told you a dozen times.", "fresht
 // Transitions: each one is motivated by the kinds on either side of it, and none repeats.
 export interface Trans { name: string; from: number; to: number; a: number; b: number; blur: number }
 export const TRANS: Trans[] = [
-  { name: "dial dive",      from: 0,  to: 1,  a: 5.30,  b: 6.30,  blur: 6 },
+  { name: "dial dive",      from: 0,  to: 1,  a: 5.30,  b: 6.30,  blur: 10 },
   { name: "ripple iris",    from: 1,  to: 2,  a: 9.30,  b: 10.25, blur: 0 },
-  { name: "line split",     from: 2,  to: 3,  a: 13.40, b: 14.30, blur: 5 },
+  { name: "line split",     from: 2,  to: 3,  a: 13.40, b: 14.30, blur: 12 },
   { name: "starlight flash", from: 3, to: 4,  a: 17.50, b: 18.40, blur: 0 },
-  { name: "card flip",      from: 4,  to: 5,  a: 21.40, b: 22.30, blur: 5 },
+  { name: "card flip",      from: 4,  to: 5,  a: 21.40, b: 22.30, blur: 10 },
   { name: "ink rain",       from: 5,  to: 6,  a: 25.30, b: 26.35, blur: 0 },
-  { name: "stamp slam",     from: 6,  to: 7,  a: 29.45, b: 30.30, blur: 5 },
+  { name: "stamp slam",     from: 6,  to: 7,  a: 29.45, b: 30.30, blur: 10 },
   { name: "ink bleed",      from: 7,  to: 8,  a: 33.35, b: 34.30, blur: 0 },
   { name: "spotlight iris", from: 8,  to: 9,  a: 37.40, b: 38.30, blur: 0 },
   { name: "drain",          from: 9,  to: 10, a: 41.35, b: 42.35, blur: 0 },
-  { name: "curl",           from: 10, to: 11, a: 45.30, b: 46.35, blur: 4 },
-  { name: "whip spin",      from: 11, to: 12, a: 49.45, b: 50.30, blur: 8 },
-  { name: "pull back",      from: 12, to: 13, a: 53.40, b: 55.00, blur: 4 },
+  { name: "curl",           from: 10, to: 11, a: 45.30, b: 46.35, blur: 8 },
+  { name: "whip spin",      from: 11, to: 12, a: 49.45, b: 50.30, blur: 24 },
+  { name: "pull back",      from: 12, to: 13, a: 53.40, b: 55.00, blur: 12 },
 ];
 
 // Sound and picture cues, absolute seconds. scenes.ts and music.ts both read these.

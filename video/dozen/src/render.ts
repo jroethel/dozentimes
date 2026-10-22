@@ -20,10 +20,11 @@ const master = OUT + (preview ? "preview.mp4" : "a-dozen-times-4k60.mp4");
 // ---------- audio: compose, then measure for a linear two-pass loudnorm to -14 LUFS, -1 dBTP ----------
 execFileSync("node", [new URL("./music.ts", import.meta.url).pathname], { stdio: "inherit" });
 const pass1 = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", OUT + "score.wav",
-  "-af", "loudnorm=I=-14:TP=-1:LRA=11:print_format=json", "-f", "null", "-"], { encoding: "utf8" });
+  "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"], { encoding: "utf8" });
 const j = JSON.parse(pass1.stderr.match(/\{[\s\S]*\}/)![0]);
 console.log(`score measured: ${j.input_i} LUFS, ${j.input_tp} dBTP`);
-const AF = `loudnorm=I=-14:TP=-1:LRA=11:measured_I=${j.input_i}:measured_TP=${j.input_tp}:measured_LRA=${j.input_lra}` +
+// TP -1.5 leaves room for the AAC encoder, which lifts true peak a few tenths above the WAV's
+const AF = `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${j.input_i}:measured_TP=${j.input_tp}:measured_LRA=${j.input_lra}` +
   `:measured_thresh=${j.input_thresh}:offset=${j.target_offset}:linear=true:print_format=summary`;
 
 // ---------- video ----------
@@ -34,8 +35,8 @@ const ff = spawn("ffmpeg", [
   "-ss", String(from), "-t", String(to - from), "-i", OUT + "score.wav",
   "-map", "0:v", "-map", "1:a",
   "-vf", "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p",
-  "-c:v", "libx264", "-preset", preview ? "veryfast" : "slow", "-crf", preview ? "18" : "13",
-  "-profile:v", "high", "-level:v", preview ? "4.2" : "5.2", "-x264-params", "aq-mode=3:aq-strength=0.9",
+  "-c:v", "libx264", "-preset", preview ? "veryfast" : "slow", "-crf", preview ? "18" : "15",
+  "-profile:v", "high", "-level:v", preview ? "4.2" : "5.2", "-x264-params", "aq-mode=3:aq-strength=0.9:colorprim=bt709:transfer=bt709:colormatrix=bt709",
   ...COLOR,
   "-af", AF, "-c:a", "aac", "-b:a", "320k", "-ar", "48000",
   "-movflags", "+faststart", "-shortest", master,
@@ -81,11 +82,13 @@ console.log(`\n${master}  ${(statSync(master).size / 1e6).toFixed(1)} MB  in ${(
 if (!preview && from === 0 && to === DUR) {
   // the social cut: 1080p60 from the master, sized for quick uploads
   const social = OUT + "a-dozen-times-1080p.mp4";
-  execFileSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "warning", "-i", master,
+  execFileSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "warning", "-i", master, "-i", OUT + "score.wav",
+    "-map", "0:v", "-map", "1:a",
     "-vf", "scale=1920:1080:flags=lanczos:in_color_matrix=bt709:out_color_matrix=bt709",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-maxrate", "14M", "-bufsize", "28M",
-    "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", ...COLOR,
-    "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", social], { stdio: "inherit" });
+    "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-maxrate", "16M", "-bufsize", "32M",
+    "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p",
+    "-x264-params", "aq-mode=3:colorprim=bt709:transfer=bt709:colormatrix=bt709", ...COLOR,
+    "-af", AF, "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", "-shortest", social], { stdio: "inherit" });
   console.log(`${social}  ${(statSync(social).size / 1e6).toFixed(1)} MB`);
   // the poster, painted directly rather than pulled from the encode
   setup(1920, 1080);

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Dozen Times</title>
+<style>
+  @font-face { font-family: "Instrument Serif"; src: url("fonts/InstrumentSerif-Regular.ttf"); }
+  @font-face { font-family: "Instrument Serif"; font-style: italic; src: url("fonts/InstrumentSerif-Italic.ttf"); }
+  @font-face { font-family: "Inter"; font-weight: 100 900; src: url("fonts/Inter.ttf"); }
+  :root {
+    --bg: #0b0b0e; --panel: #15151a; --ink: #f3eee4; --sub: #a39e94; --line: #2a2a31; --acc: #d6ff3d;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #f4f1ea; --panel: #ffffff; --ink: #151517; --sub: #5e5a52; --line: #dcd7cc; --acc: #4b6b00; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.55 Inter, system-ui, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font: 400 clamp(44px, 7vw, 76px)/1.02 "Instrument Serif", serif; margin: 0 0 8px; }
+  h1 em { color: var(--acc); }
+  h2 { font: 400 32px/1.2 "Instrument Serif", serif; margin: 48px 0 12px; }
+  p.lede { color: var(--sub); margin: 0 0 28px; max-width: 60ch; }
+  video { width: 100%; border-radius: 12px; background: #000; display: block; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+  a.btn, button { font: 600 16px/1 Inter, sans-serif; color: var(--bg); background: var(--ink); border: 0; border-radius: 999px;
+    padding: 13px 20px; text-decoration: none; cursor: pointer; }
+  a.btn.ghost, button.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+  .meta { color: var(--sub); font-size: 15px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 12px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  td:first-child { width: 30%; font-weight: 600; padding-left: 0; }
+  .post { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 14px 0; }
+  .post h3 { margin: 0 0 8px; font: 600 15px/1 Inter, sans-serif; color: var(--sub); text-transform: uppercase; letter-spacing: 0.08em; }
+  .post p { margin: 0 0 12px; white-space: pre-line; }
+  code { font: 15px/1.4 ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+<main>
+  <h1>A Dozen <em>Times</em></h1>
+  <p class="lede">A 60-second film on the twelve kinds of time in freshtime's design, one example each, from Apollo 11 to the UK tax year.</p>
+
+  <video src="out/a-dozen-times-1080p.mp4" poster="out/poster.jpg" controls playsinline preload="metadata"></video>
+  <div class="row">
+    <a class="btn" href="out/a-dozen-times-1080p.mp4" download>Download for Slack and social (1080p)</a>
+    <a class="btn ghost" href="out/a-dozen-times-4k60.mp4" download>Download the 4K master</a>
+    <a class="btn ghost" href="out/poster.jpg" download>Poster</a>
+    <a class="btn ghost" href="a-dozen-times.srt" download>Captions</a>
+  </div>
+  <p class="meta">60 seconds, 60 fps, H.264 with AAC audio at -14 LUFS. Music and sound are composed for this film.</p>
+
+  <h2>Where each file goes</h2>
+  <table>
+    <tr><td>Slack</td><td>Drag the 1080p file into the message box. It plays inline.</td></tr>
+    <tr><td>LinkedIn, X, YouTube</td><td>Upload the 1080p file and add the poster as the thumbnail where offered.</td></tr>
+    <tr><td>Your laptop</td><td>Open the 4K master in QuickTime for the sharpest picture.</td></tr>
+    <tr><td>Captions</td><td>Every word is already on screen, so captions repeat it. Upload the .srt only where a platform asks for one.</td></tr>
+    <tr><td>Reels, TikTok, Shorts</td><td>They take 16:9, but the frame is small on a phone. There is no vertical cut yet.</td></tr>
+  </table>
+
+  <h2>Draft post text</h2>
+  <p class="meta">Drafts in plain language for you to edit, not posted anywhere.</p>
+  <div class="post"><h3>LinkedIn</h3><p id="li">Time is not one thing.
+A single fact can carry twelve different dates: when it happened, when it was true, when we learned it, when someone last checked it, and eight more.
+I'm building freshtime, a pair of time tools for agent memory, around these twelve.
+This 60-second film walks through each one with a single example, from Apollo 11 to the UK tax year.</p>
+    <button class="ghost" data-copy="li">Copy</button></div>
+  <div class="post"><h3>X</h3><p id="x">Time is not one thing. One fact can carry twelve different dates. 60 seconds, twelve kinds of time, from Apollo 11 to the UK tax year.</p>
+    <button class="ghost" data-copy="x">Copy</button></div>
+  <div class="post"><h3>Slack</h3><p id="sl">60 seconds on the twelve kinds of time behind freshtime. It works with the sound off and is better with it on.</p>
+    <button class="ghost" data-copy="sl">Copy</button></div>
+</main>
+<script>
+  document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).innerText); b.textContent = "Copied"; }
+    catch { b.textContent = "Select the text to copy"; }
+    setTimeout(() => (b.textContent = "Copy"), 1600);
+  }));
+</script>
+</body>
+</html>

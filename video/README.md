@@ -1,5 +1,8 @@
 # video - "Twelve Times"
 
+The current film is [A Dozen Times](dozen/README.md) in `dozen/`.
+This README covers the earlier cut, kept for comparison.
+
 A 60-second motion-graphics video proving the twelve kinds of time from
 `test/kinds/`. Storyboard and microscript: [storyboard.md](storyboard.md).
 Share page with download and captions: [share.html](share.html) (open it, the

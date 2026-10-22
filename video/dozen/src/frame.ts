@@ -287,7 +287,10 @@ const TR: Record<string, (ctx: Ctx, t: number, tr: (typeof TRANS)[number]) => vo
     const sc = Math.max(before ? 1 + 0.4 * u : 1.4 - 0.4 * u, cover);
     ctx.scale(sc, sc);
     ctx.translate(-960, -540);
+    // sub-frames alone leave thin strokes stepped at this speed; a blur that follows the speed fills the gaps
+    ctx.filter = blurPx(7 * clamp(1 - Math.abs(t - mid) / 0.35));
     full(ctx, A);
+    ctx.filter = "none";
     ctx.restore();
     const f = 1 - clamp(Math.abs(t - mid) / 0.14);
     if (f > 0) { ctx.fillStyle = rgba("#ffffff", 0.3 * f); ctx.fillRect(0, 0, 1920, 1080); }
