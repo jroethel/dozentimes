@@ -1,0 +1,27 @@
+{
+  "now": "2026-10-22",
+  "note": "Contrived on purpose to tell Jev apart from the rules. Traps are worded so the keyword rules misread them. Controls should be easy for both. Jev never sees the rules' answer. modes lists the acceptable as-of modes. anchor null means none expected, \"any\" means not scored.",
+  "items": [
+    { "group": "trap", "why": "'will' is a polite request, not the future", "question": "Will you tell me what alpha's status is?", "ambient": null, "modes": ["current", "none"], "anchor": null },
+    { "group": "trap", "why": "'plan to' is about the asking, not the answer", "question": "I plan to ask about beta later, but what is gamma's state?", "ambient": null, "modes": ["current", "none"], "anchor": null },
+    { "group": "trap", "why": "'remind me what' asks to recall, not to schedule", "question": "Remind me what we decided about storage.", "ambient": null, "modes": ["none", "current"], "anchor": null },
+    { "group": "trap", "why": "'still' points at the period already under discussion", "question": "Was that still true at the time?", "ambient": { "start": "2026-10-14", "end": "2026-10-14", "text": "Oct 14" }, "modes": ["past"], "anchor": { "start": "2026-10-14", "end": "2026-10-14" } },
+    { "group": "trap", "why": "'current' means current then, at that point", "question": "What was the current plan at that point?", "ambient": { "start": "2026-10-14", "end": "2026-10-14", "text": "Oct 14" }, "modes": ["past"], "anchor": { "start": "2026-10-14", "end": "2026-10-14" } },
+    { "group": "trap", "why": "a then-and-now comparison without the word since", "question": "What's different now compared with Oct 1?", "ambient": null, "modes": ["mixed"], "anchor": { "start": "2026-10-01", "end": "2026-10-01" } },
+    { "group": "trap", "why": "a then-and-now comparison with both a date and today", "question": "Compared to where we were on Sep 30, where are we today?", "ambient": null, "modes": ["mixed"], "anchor": { "start": "2026-09-30", "end": "2026-09-30" } },
+    { "group": "trap", "why": "'these days' means now with no keyword", "question": "What's alpha's state of play these days?", "ambient": null, "modes": ["current"], "anchor": null },
+    { "group": "trap", "why": "the ambient date is dropped by 'right now' said in passing about something else", "question": "I'm busy right now, but what was beta's plan back then?", "ambient": { "start": "2026-10-14", "end": "2026-10-14", "text": "Oct 14" }, "modes": ["past"], "anchor": { "start": "2026-10-14", "end": "2026-10-14" } },
+    { "group": "trap", "why": "'next' is the name of the step, the question is about now", "question": "Has the next step for gamma changed?", "ambient": null, "modes": ["current", "mixed"], "anchor": null },
+    { "group": "gap", "why": "past with no date: the contract has no way to say it", "question": "Back when we still used Postgres, what was the cache plan?", "ambient": null, "modes": ["past"], "anchor": null },
+    { "group": "gap", "why": "an event, not a date, sets the time", "question": "What did we believe before the launch?", "ambient": null, "modes": ["past"], "anchor": null },
+    { "group": "control", "why": "plain now", "question": "What is alpha's status right now?", "ambient": null, "modes": ["current"], "anchor": null },
+    { "group": "control", "why": "plain stated date", "question": "What was the plan for beta as of Oct 14?", "ambient": null, "modes": ["past"], "anchor": { "start": "2026-10-14", "end": "2026-10-14" } },
+    { "group": "control", "why": "plain month", "question": "What happened in September?", "ambient": null, "modes": ["range"], "anchor": { "start": "2026-09-01", "end": "2026-09-30" } },
+    { "group": "control", "why": "plain since", "question": "What changed for gamma since Oct 1?", "ambient": null, "modes": ["mixed"], "anchor": { "start": "2026-10-01", "end": "2026-10-01" } },
+    { "group": "control", "why": "plain reminder", "question": "Remind me next week to check the importer.", "ambient": null, "modes": ["future"], "anchor": { "start": "2026-10-26", "end": "2026-11-01" } },
+    { "group": "control", "why": "plain follow-up", "question": "And for beta?", "ambient": { "start": "2026-10-14", "end": "2026-10-14", "text": "Oct 14" }, "modes": ["past"], "anchor": { "start": "2026-10-14", "end": "2026-10-14" } },
+    { "group": "notime", "why": "no time at all", "question": "What color is the alpha logo?", "ambient": null, "modes": ["none"], "anchor": null },
+    { "group": "notime", "why": "not a project question", "question": "Tell me a joke about databases.", "ambient": null, "modes": ["none"], "anchor": null },
+    { "group": "notime", "why": "identity fact, timeless", "question": "Who founded the gamma project?", "ambient": null, "modes": ["none", "past"], "anchor": null }
+  ]
+}

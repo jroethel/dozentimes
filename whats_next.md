@@ -55,4 +55,7 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - [x] Replay suite: against git, recall 0.998 and precision 1.0 excluding backdated lines. Status 7-day shelf life flags about 7 facts per real change (posted on #4). Rule (d) supersedes 6416 line-dates, over-reach unknown (#12). Re-added lines stayed invalid (fixed, reopen).
 - [x] E2E suite: 14/14 turns over 2 runs after two fixes: explicit "now" words beat Jev's mode (Jev read "next step ... now" as future), and the judge asks "true for the asked time" instead of "currently true".
 - Observation: on every labeled set so far, Jev's intent reading adds nothing over the rules and needed two guards. Its value is untested until the blind set (#1).
+- [x] Jev probe (`npm run probe`, 21 contrived questions): traps worded to fool the rules score rules 0/10, Jev alone 9/10. The keyword "now" guard had thrown away three of Jev's right answers (combined 6/10). Changed: on the Jev path, "about right now?" is Jev's own judgment, not a keyword. Combined is now 9/10. score.ts, ablation --jev and e2e 14/14 unchanged.
+- Known Jev weakness: it reads "next step" as future at 0.9 confidence while its own now judgment says now (0.8). The combine uses the now judgment.
+- Contract gap: a past with no date ("before the launch", "back when we used Postgres") has no anchor, so it reads as now. Filed.
 - Next: design explanation with diagrams in the elucid-flow brand (fresh agent), then the open issues in a fresh session.

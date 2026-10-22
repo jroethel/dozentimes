@@ -48,6 +48,7 @@ node freshtime-intf/score.ts  # rules against Jev on 20 labeled questions
 npm run kinds                 # coverage matrix for the twelve kinds of time
 npm run replay -- --jev       # replay real doc history from git (results in ~/.freshtime/replay/)
 npm run e2e -- --runs 2       # real pi + glm-5.3 through the seven-question chat, judged by Jev
+npm run probe                 # contrived questions that fool the rules: is Jev doing anything?
 npm run e2e -- --fallback     # same with a bad Jev key: answers must still arrive
 ```
 

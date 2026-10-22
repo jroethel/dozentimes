@@ -73,10 +73,14 @@ interface Overrides { cand?: Cand | null; mode?: AsOfMode; nowQ?: boolean; repla
 
 function derive(question: string, session: Session, cands: Cand[], ov: Overrides = {}): Result {
   const now = session.now;
+  const jev = ov.path === "jev";
   const cand = ov.cand === undefined ? (cands[0] ?? null) : ov.cand;
-  const nowClear = NOW_CLEAR.test(question) || !!ov.nowQ;
-  const nowAny = NOW_WORD.test(question) || !!ov.nowQ;
+  // With Jev, "is this about right now?" is Jev's judgment, not a keyword: "was that still true at the time?"
+  // has "still" and is about the past. Without Jev, the keywords decide.
+  const nowAny = jev ? !!ov.nowQ : NOW_WORD.test(question);
+  const nowClear = jev ? !!ov.nowQ : NOW_CLEAR.test(question);
   const future = FUTURE.test(question);
+  const anchored = (m?: AsOfMode) => !!m && ["past", "range", "mixed"].includes(m);
   let mode: AsOfMode;
   let basis: Basis = "default";
   let anchor: Anchor | null = null;
@@ -86,24 +90,26 @@ function derive(question: string, session: Session, cands: Cand[], ov: Overrides
     if (future || cand.start > now) mode = "future";
     else if (SINCE.test(question)) mode = "mixed";
     else mode = cand.start !== cand.end ? "range" : "past";
+    if (ov.mode) mode = ov.mode;
   } else if (nowAny) mode = "current";
-  else if (future) mode = "future";
   else if (session.ambient && !ov.replaceAmbient) {
+    // An inherited reading is kept unless Jev says the question changes the period. Jev's mode choice alone
+    // reads "and the next step for alpha?" as future, because of the word "next".
     basis = "inherited";
     anchor = session.ambient;
     mode = anchor.start !== anchor.end ? "range" : "past";
-  } else mode = "none";
-  // An inherited reading is kept unless Jev says the question changes the period (replaceAmbient never reaches here).
-  // Jev's mode choice alone reads a follow-up like "and the next step for alpha?" as future, which drops the as-of.
-  // An explicit "now" word with no date is stated, so Jev cannot turn it into another mode
-  // (live Jev read "What is the next step for alpha now?" as future).
-  const statedNow = !cand && NOW_WORD.test(question);
-  if (ov.mode && basis !== "inherited" && !statedNow && !(anchor === null && ["past", "range", "mixed"].includes(ov.mode))) mode = ov.mode;
-  if (basis === "inherited" && !["past", "range", "mixed"].includes(mode)) { basis = "default"; anchor = null; }
+  } else if (jev && ov.mode && !anchored(ov.mode)) {
+    // Jev picked current, none or future, and its own "about right now?" judgment did not say now.
+    mode = ov.mode;
+  } else if (future) mode = "future";
+  else if (jev && NOW_WORD.test(question)) mode = "current";
+  else mode = "none"; // ponytail: a past with no date ("before the launch") has no anchor to read at, so it reads as now
+  if (basis === "inherited" && !anchored(mode)) { basis = "default"; anchor = null; }
 
   let ambient = session.ambient;
-  if (basis === "stated" && ["past", "range", "mixed"].includes(mode)) ambient = anchor;
-  else if (basis !== "stated" && (nowClear || ov.replaceAmbient)) ambient = null;
+  if (basis === "stated" && anchored(mode)) ambient = anchor;
+  else if (basis !== "stated" && mode === "current" && (nowClear || ov.replaceAmbient)) ambient = null;
+  else if (basis === "default" && ov.replaceAmbient) ambient = null;
 
   const intent: TemporalIntent = {
     asof_mode: mode, anchor, basis, kinds: kindsFor(mode, question),
@@ -124,7 +130,8 @@ const ASOF_LABELS = {
   none: "No time reference at all, a timeless question",
 };
 
-async function jevLayer(question: string, session: Session, cands: Cand[]): Promise<Result> {
+// The raw Jev request, without the rules or guards. Exported so tests can score Jev on its own.
+export async function jevAnswers(question: string, session: Session, cands: Cand[] = candidates(question, session.now)): Promise<Record<string, JevAnswer>> {
   const state = [`Today is ${session.now}.`,
     session.ambient ? `Earlier in this conversation the time period under discussion was ${session.ambient.start}..${session.ambient.end}.` : "",
     `Question: ${question}`].filter(Boolean).join("\n");
@@ -138,7 +145,11 @@ async function jevLayer(question: string, session: Session, cands: Cand[]): Prom
     qs.anchor = { type: "choice", instructions: "Which date phrase sets the time the answer should be about?", criteria };
   }
   if (session.ambient) qs.changes = { type: "noul", instructions: "Does this question change the time period under discussion?" };
-  const { answers } = await askJev(state, qs);
+  return (await askJev(state, qs)).answers;
+}
+
+async function jevLayer(question: string, session: Session, cands: Cand[]): Promise<Result> {
+  const answers = await jevAnswers(question, session, cands);
   const ch = (a?: JevAnswer) => (a?.type === "choice" ? a : null);
   const yes = (a?: JevAnswer) => a?.type === "noul" && a.noul >= 0.5;
   const ov: Overrides = { path: "jev", nowQ: yes(answers.now_q), replaceAmbient: yes(answers.changes) };

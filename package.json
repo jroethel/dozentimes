@@ -7,7 +7,8 @@
     "ablation": "node test/ablation.report.ts",
     "e2e": "node test/e2e/run.ts",
     "replay": "node test/replay/replay.ts",
-    "kinds": "node test/kinds/report.ts"
+    "kinds": "node test/kinds/report.ts",
+    "probe": "node freshtime-intf/probe.ts"
   },
   "dependencies": {
     "chrono-node": "^2.7.7"
