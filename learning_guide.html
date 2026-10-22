@@ -145,6 +145,28 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
-<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Companion docs live in <code>docs/plans/2026-10-22.pi-time-poc.md</code>, <code>docs/research/</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
+<h2>8. Updates - test suites (2026-10-22)</h2>
+<section class="card">
+<dl>
+<dt>"Line still in the file" is not "still true" for logs and handoffs.</dt>
+<dd>The first replay counted every rule replacement of a line still present as a miss, and reported recall 0.53. <code>whats_next.md</code> keeps old <code>Next:</code> lines below newer ones, and handoff folders keep old files. With rule replacements counted separately, recall against git is 0.998.</dd>
+<dd class="why">Caught by the orchestrator reading the first replay report, before the numbers reached an issue.</dd>
+<dt>A replacement closes at its successor's date, not the newest one's.</dt>
+<dd>Rule (b) closed every older <code>Next:</code> at the newest date when a file was read in one pass, so a past read between sessions showed a stale step. Found by <code>test/kinds/valid.test.ts</code>, fixed by chaining each one to its successor.</dd>
+<dt>A removed line that comes back must be reopened.</dt>
+<dd>The unique key (source, section, text) made a re-added line skip insertion and stay invalid. This caused 1,998 replay misses. It is now reopened. The gap between removal and return is lost (a <code>ponytail:</code> comment marks it).</dd>
+<dt>Explicit "now" words beat Jev's mode.</dt>
+<dd>In the e2e suite, live Jev read "What is the next step for alpha now?" as future. With no date in the question, a "now" word is a stated reading that Jev cannot override. This is the second guard on Jev after the inherited-as-of guard.</dd>
+<dd class="why">On every labeled set so far, Jev's intent reading adds nothing over the rules. Its value stays untested until the blind set (#1).</dd>
+<dt>A judge question has to ask about the time the question asks about.</dt>
+<dd>"Does the answer present X as currently true?" failed correct historical answers that also mentioned the present. The e2e judge now asks whether X is presented as true for the asked date or period, and whether a fact is included in any wording.</dd>
+<dt>The 7-day status shelf life is too short on real data.</dt>
+<dd>The replay with Jev classes found 4,672 status facts flagged and 14% of them changed in git. The share changed was 7% at 0 to 7 days and 35% at 31 to 90 days. The data is on issue #4.</dd>
+<dt>Test runs must not leave a ledger in the user's home.</dt>
+<dd>A worker's pi run without <code>FRESHTIME_DB</code> created <code>~/.freshtime/ledger.db</code>. It was deleted so Jeremy's first run is still a first run.</dd>
+</dl>
+</section>
+
+<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session: section 8 added. Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
 </body>
 </html>
