@@ -1,0 +1,9 @@
+{
+  "ingest_at": "2026-10-13",
+  "now": "2026-10-22",
+  "note": "Appended to the sources after the ingest. Nothing tells the ledger, so only a re-read can find them.",
+  "edits": [
+    { "file": "alpha/whats_next.md", "at": "2026-10-15", "append": "\n## 2026-10-15 session\n- Next: alpha launched, monitoring error rates\n" },
+    { "file": "beta/whats_next.md", "at": "2026-10-17", "append": "\n## 2026-10-17 session\n- Next: beta published the onboarding guide, collecting feedback\n" }
+  ]
+}

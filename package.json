@@ -1,0 +1,12 @@
+{
+  "name": "freshtime",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "ablation": "node test/ablation.report.ts"
+  },
+  "dependencies": {
+    "chrono-node": "^2.7.7"
+  }
+}

@@ -1,0 +1,196 @@
+{
+ "now": "2026-10-22",
+ "items": [
+  {
+   "question": "What is the status of project alpha now?",
+   "ambient": null,
+   "asof_mode": "current",
+   "anchor": null,
+   "basis": "default"
+  },
+  {
+   "question": "What was the budget for beta as of Oct 14?",
+   "ambient": null,
+   "asof_mode": "past",
+   "anchor": {
+    "start": "2026-10-14",
+    "end": "2026-10-14"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "Who owned the migration on Sep 30?",
+   "ambient": null,
+   "asof_mode": "past",
+   "anchor": {
+    "start": "2026-09-30",
+    "end": "2026-09-30"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "What happened in September?",
+   "ambient": null,
+   "asof_mode": "range",
+   "anchor": {
+    "start": "2026-09-01",
+    "end": "2026-09-30"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "What changed in gamma since Oct 1?",
+   "ambient": null,
+   "asof_mode": "mixed",
+   "anchor": {
+    "start": "2026-10-01",
+    "end": "2026-10-01"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "Remind me next week to review the delta roadmap",
+   "ambient": null,
+   "asof_mode": "future",
+   "anchor": {
+    "start": "2026-10-26",
+    "end": "2026-11-01"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "Tell me about the epsilon rollout",
+   "ambient": null,
+   "asof_mode": "none",
+   "anchor": null,
+   "basis": "default"
+  },
+  {
+   "question": "and what about beta?",
+   "ambient": {
+    "start": "2026-10-14",
+    "end": "2026-10-14"
+   },
+   "asof_mode": "past",
+   "anchor": {
+    "start": "2026-10-14",
+    "end": "2026-10-14"
+   },
+   "basis": "inherited"
+  },
+  {
+   "question": "What is beta status today?",
+   "ambient": {
+    "start": "2026-10-14",
+    "end": "2026-10-14"
+   },
+   "asof_mode": "current",
+   "anchor": null,
+   "basis": "default"
+  },
+  {
+   "question": "What was decided back in August?",
+   "ambient": null,
+   "asof_mode": "range",
+   "anchor": {
+    "start": "2026-08-01",
+    "end": "2026-08-31"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "What will happen with theta next week?",
+   "ambient": null,
+   "asof_mode": "future",
+   "anchor": {
+    "start": "2026-10-26",
+    "end": "2026-11-01"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "Is the vendor contract still active?",
+   "ambient": null,
+   "asof_mode": "current",
+   "anchor": null,
+   "basis": "default"
+  },
+  {
+   "question": "What did the team report last week?",
+   "ambient": null,
+   "asof_mode": "range",
+   "anchor": {
+    "start": "2026-10-12",
+    "end": "2026-10-18"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "Between Oct 1 and Oct 10, what shipped for iota?",
+   "ambient": null,
+   "asof_mode": "range",
+   "anchor": {
+    "start": "2026-10-01",
+    "end": "2026-10-10"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "What is the latest on kappa?",
+   "ambient": null,
+   "asof_mode": "current",
+   "anchor": null,
+   "basis": "default"
+  },
+  {
+   "question": "and who was involved?",
+   "ambient": {
+    "start": "2026-09-01",
+    "end": "2026-09-30"
+   },
+   "asof_mode": "range",
+   "anchor": {
+    "start": "2026-09-01",
+    "end": "2026-09-30"
+   },
+   "basis": "inherited"
+  },
+  {
+   "question": "Show me the current owner of lambda",
+   "ambient": null,
+   "asof_mode": "current",
+   "anchor": null,
+   "basis": "default"
+  },
+  {
+   "question": "What was the plan for mu on Oct 5?",
+   "ambient": null,
+   "asof_mode": "past",
+   "anchor": {
+    "start": "2026-10-05",
+    "end": "2026-10-05"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "What about the xi budget in September?",
+   "ambient": {
+    "start": "2026-10-14",
+    "end": "2026-10-14"
+   },
+   "asof_mode": "range",
+   "anchor": {
+    "start": "2026-09-01",
+    "end": "2026-09-30"
+   },
+   "basis": "stated"
+  },
+  {
+   "question": "Remind me to review omicron",
+   "ambient": null,
+   "asof_mode": "future",
+   "anchor": null,
+   "basis": "default"
+  }
+ ]
+}

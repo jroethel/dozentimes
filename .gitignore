@@ -1,0 +1,9 @@
+node_modules/
+.freshtime/
+*.db
+*.db-*
+pi-time/agent/sessions/
+pi-time/agent/auth.json
+pi-time/agent/models-store.json
+pi-time/agent/trust.json
+.scratch-pi/

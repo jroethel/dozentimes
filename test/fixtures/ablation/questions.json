@@ -1,0 +1,26 @@
+{
+  "note": "Asked in order in one session at edits.json now. must maps a text tag to the acceptable statuses. harmful tags must not come back as current or current_then.",
+  "questions": [
+    { "id": "q1", "q": "What is the next step for alpha now?",
+      "must": { "alpha launched": ["current"] },
+      "harmful": ["load test", "waits on the DBA"] },
+    { "id": "q2", "q": "What was the next step for alpha as of Oct 1?",
+      "must": { "waits on the DBA": ["current_then"] },
+      "harmful": ["load test", "alpha launched"] },
+    { "id": "q3", "q": "As of Oct 14, what was the next step for beta?",
+      "must": { "reviews the onboarding guide": ["current_then"] },
+      "harmful": ["drafts the onboarding guide", "published the onboarding guide"] },
+    { "id": "q4", "q": "And the next step for alpha?",
+      "must": { "load test": ["current_then"] },
+      "harmful": ["alpha launched", "waits on the DBA"] },
+    { "id": "q5", "q": "What changed for alpha since Oct 1?",
+      "must": { "waits on the DBA": ["current_then", "replaced"], "alpha launched": ["current"] },
+      "harmful": ["load test"] },
+    { "id": "q6", "q": "What did we decide about the gamma attachments today?",
+      "must": { "attachments in S3": ["current"] },
+      "harmful": [] },
+    { "id": "q7", "q": "What was the beta publishing decision as of Sep 30?",
+      "must": { "weekly digests": ["current_then", "current"] },
+      "harmful": ["reviews the onboarding guide", "published the onboarding guide"] }
+  ]
+}
