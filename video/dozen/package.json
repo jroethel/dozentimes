@@ -1,0 +1,14 @@
+{
+  "name": "a-dozen-times",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "music": "node src/music.ts",
+    "render": "node src/render.ts",
+    "still": "node src/still.ts"
+  },
+  "dependencies": {
+    "skia-canvas": "^4.0.0"
+  }
+}
