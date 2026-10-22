@@ -66,7 +66,7 @@ Each scene lists what is on screen, the action, the transition out, and the soun
 
 - On screen: "If I've told you once," then "I've told you a dozen times." with "a dozen" in italic and "times." in lime.
 - Action: a faint clock face turns behind the words from the first frame.
-  At 2.4 the sentence rises out and "times." glides to the centre.
+  At 2.4 the sentence rises out, and at 2.95 "times." glides to the centre.
   At 3.3 twelve copies fly to the twelve hours, one every 0.06 s.
   "Literally." holds for half a second.
   Then "Twelve kinds of time." takes the centre and the clock face brightens.
@@ -192,7 +192,7 @@ Each scene lists what is on screen, the action, the transition out, and the soun
 - On screen: twelve tiles, then the twelve names round a dial, "There.", "Now I've told you a dozen times.", and "freshtime".
 - Action: from 55.0 the hand sweeps once round.
   Each tile turns into its name and a dot in its kind's color as the hand passes.
-  At 57.0 the closing line rises, at 58.1 the freshtime mark appears, and from 59.2 the frame fades to black.
+  At 56.7 the closing line rises, at 58.1 the freshtime mark appears, and from 59.2 the frame fades to black.
 - Sound: the drums drop out, and a bell replays each kind's note as the hand passes it.
   A deep bell and a D major chord land at 57.0.
 

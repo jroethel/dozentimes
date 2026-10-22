@@ -39,7 +39,7 @@ open -R out/a-dozen-times-1080p.mp4
 npm install                       # skia-canvas, the one dependency
 node src/timeline.ts              # reading-budget and transition checks
 node src/render.ts --preview      # 1080p QC render to out/preview.mp4, about 2 minutes
-node src/render.ts                # 4K master, 1080p social cut and poster, about 16 minutes
+node src/render.ts                # 4K master, 1080p social cut and poster, about 17 minutes
 node src/still.ts 9.5 frame.png   # any single frame
 node src/still.ts grid6 sheet.png 5.3 9.4 13.8   # chosen frames on one sheet
 ```
