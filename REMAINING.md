@@ -8,7 +8,7 @@ The issues labeled `agent:todo` are the source of truth.
 - Fitted shelf lives: the `checks` table records age and whether a fact changed, but shelf lives are still the hand-set scorer.py values.
 - Re-ingest during verify classifies new facts by keyword, because verify is synchronous. Jev only classifies at full ingest.
 - Fact identity is the exact line. A reworded bullet reads as one fact replaced and a new one added.
-- Replacement rules cover `Next:` lines, checkboxes and removed lines only. Other status bullets go stale but are never replaced by a newer bullet.
+- Replacement rules cover `Next:` lines, checkboxes, removed lines and state-like handoff sections (State, Next step, Recent artifacts). Other bullets, such as an older handoff's project narrative, go stale but are never replaced by a newer one.
 - Intended time is parsed (`future`) but nothing schedules it.
 - Business time: `FY` phrases add the business kind, but no fiscal calendar maps them to dates.
 - Store adapters: the contract leaves room for Graphiti or Mem0 behind the ledger, and none is written.
