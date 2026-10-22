@@ -1,0 +1,12 @@
+{
+  "note": "Gold reading per ablation question: asof_mode, anchor start (null when none) and basis. Derived from test/fixtures/ablation/questions.json.",
+  "turns": {
+    "q1": { "asof_mode": "current", "anchor": null,         "basis": null },
+    "q2": { "asof_mode": "past",    "anchor": "2026-10-01", "basis": "stated" },
+    "q3": { "asof_mode": "past",    "anchor": "2026-10-14", "basis": "stated" },
+    "q4": { "asof_mode": "past",    "anchor": "2026-10-14", "basis": "inherited" },
+    "q5": { "asof_mode": "mixed",   "anchor": "2026-10-01", "basis": null },
+    "q6": { "asof_mode": "current", "anchor": null,         "basis": null },
+    "q7": { "asof_mode": "past",    "anchor": "2026-09-30", "basis": "stated" }
+  }
+}

@@ -95,7 +95,10 @@ function derive(question: string, session: Session, cands: Cand[], ov: Overrides
   } else mode = "none";
   // An inherited reading is kept unless Jev says the question changes the period (replaceAmbient never reaches here).
   // Jev's mode choice alone reads a follow-up like "and the next step for alpha?" as future, which drops the as-of.
-  if (ov.mode && basis !== "inherited" && !(anchor === null && ["past", "range", "mixed"].includes(ov.mode))) mode = ov.mode;
+  // An explicit "now" word with no date is stated, so Jev cannot turn it into another mode
+  // (live Jev read "What is the next step for alpha now?" as future).
+  const statedNow = !cand && NOW_WORD.test(question);
+  if (ov.mode && basis !== "inherited" && !statedNow && !(anchor === null && ["past", "range", "mixed"].includes(ov.mode))) mode = ov.mode;
   if (basis === "inherited" && !["past", "range", "mixed"].includes(mode)) { basis = "default"; anchor = null; }
 
   let ambient = session.ambient;

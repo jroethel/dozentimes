@@ -51,3 +51,8 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Asked: a pi-time end-to-end suite, a real-data replay from git, and a test method with data and generators for each of the twelve kinds.
 - Plan: docs/plans/2026-10-22.test-suites.md. Three workers build test/kinds/, test/replay/ and test/e2e/ in parallel.
 - Recommendation given: the six open issues go to a fresh session after the suites land, gated by them.
+- [x] Kinds suite: 50 pass, 12 todo, 0 fail (`npm run kinds`). Found two defects: batch ingest closed every Next: at the newest date (fixed, chain to successor), same-day handoffs never replace (#12).
+- [x] Replay suite: against git, recall 0.998 and precision 1.0 excluding backdated lines. Status 7-day shelf life flags about 7 facts per real change (posted on #4). Rule (d) supersedes 6416 line-dates, over-reach unknown (#12). Re-added lines stayed invalid (fixed, reopen).
+- [x] E2E suite: 14/14 turns over 2 runs after two fixes: explicit "now" words beat Jev's mode (Jev read "next step ... now" as future), and the judge asks "true for the asked time" instead of "currently true".
+- Observation: on every labeled set so far, Jev's intent reading adds nothing over the rules and needed two guards. Its value is untested until the blind set (#1).
+- Next: design explanation with diagrams in the elucid-flow brand (fresh agent), then the open issues in a fresh session.

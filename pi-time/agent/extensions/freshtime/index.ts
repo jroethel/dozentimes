@@ -2,7 +2,7 @@
 // Imports the repo modules by relative path. Startup never throws.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
@@ -41,6 +41,11 @@ function brief(output: unknown): string {
     return Object.entries(o).filter(([, v]) => typeof v !== "object").map(([k, v]) => `${k}=${v}`).join(" ");
   } catch { return String(output ?? ""); }
 }
+
+// Test hook: FRESHTIME_TRACE_FILE gets one JSON line per turn reading and per freshtime_ask call.
+const traceLine = (o: object): void => {
+  if (process.env.FRESHTIME_TRACE_FILE) try { appendFileSync(process.env.FRESHTIME_TRACE_FILE, JSON.stringify(o) + "\n"); } catch { /* best effort */ }
+};
 
 const need = (): DatabaseSync => {
   if (!db) db = openDb();
@@ -123,6 +128,7 @@ const askTool = defineTool({
   async execute(_id, params) {
     const intent = turn && turn.prompt === params.question ? turn.intent : await parse(params.question);
     const res = readFacts(need(), intent, { now: today(), ledger: true, verify: true, query: params.question });
+    traceLine({ event: "ask", question: params.question, intent, statuses: res.facts.map((f) => f.status) });
     return { ...text(renderFacts(intent, res)), details: { intent, facts: res.facts, checks: res.checks, caught: res.caught } };
   },
 });
@@ -254,6 +260,7 @@ export default function (pi: ExtensionAPI) {
     try {
       const intent = await parse(e.prompt);
       turn = { prompt: e.prompt, intent };
+      traceLine({ event: "turn", prompt: e.prompt, intent, reading: describeIntent(intent) });
       if (!ctx.hasUI) console.error(`[pi-time] reading: ${describeIntent(intent)} | mode ${intent.asof_mode} anchor ${intent.anchor?.start ?? "none"} basis ${intent.basis} path ${intent.path}`);
       status(ctx);
       return { systemPrompt: e.systemPrompt + guidance(intent) };

@@ -45,7 +45,15 @@ node test/ablation.ts         # the ablation table
 node test/ablation.ts --cold  # same, with a fresh ledger per question
 node test/ablation.ts --jev   # intent read by Jev instead of the rules
 node freshtime-intf/score.ts  # rules against Jev on 20 labeled questions
+npm run kinds                 # coverage matrix for the twelve kinds of time
+npm run replay -- --jev       # replay real doc history from git (results in ~/.freshtime/replay/)
+npm run e2e -- --runs 2       # real pi + glm-5.3 through the seven-question chat, judged by Jev
+npm run e2e -- --fallback     # same with a bad Jev key: answers must still arrive
 ```
+
+`npm test` runs the unit tests, the ablation and the twelve-kinds suite offline.
+Kinds tests for behavior not built yet are real assertions marked todo with their issue number.
+The replay and e2e suites call live services and are run by hand.
 
 ## What the ablation shows
 
