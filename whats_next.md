@@ -71,3 +71,10 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
   Local share page with draft post text: `video/dozen/share.html`.
 - Outputs (not in git): `video/dozen/out/a-dozen-times-4k60.mp4`, `a-dozen-times-1080p.mp4`, `poster.jpg`.
 - Not built: a native vertical (9:16) cut for Reels, TikTok and Shorts.
+
+## 2026-10-22 ledger issues plan (#3 to #7, #12)
+- Asked: a plan for #3, #4, #5, #6, #7 and #12, in a form Rubix review can run on. #1 and #13 are held, and #13's schema feeds #1's blind set.
+- Plan: docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md, eight serial tasks, all on freshtime-agnt/ledger.ts.
+- Decided by Jeremy: rule (d) replaces only within a shared slug or when the later handoff names the earlier one (#12).
+- Every test in the plan was run against HEAD f87a374 and fails for the predicted reason.
+- Next: Rubix review of the plan, then execution. Nothing is executed yet.
