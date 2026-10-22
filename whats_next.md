@@ -83,3 +83,11 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - The plan now stops at checkpoints A (after T2), B (after T3), C (before T6, the P_STALE value) and D (after T8).
 - All revised plan tests were re-run against f87a374 and behave as predicted, with reword tests 2, 4 and 5 needing Task 1's column first.
 - Next: execute the plan from Task 1. Nothing is executed yet.
+
+## 2026-10-22 pi-time on main, chain start
+- Decided by Jeremy: pi-time must not live only on a branch, because it is the tool that tests branches before they merge.
+- main was fast-forwarded to f87a374 (the POC without the ledger plan commits) and pushed, with 3242595 on top: the branch launcher `pi-time/pi-time-branch` and the brief `docs/briefs/2026-10-22.I3.ledger-issues-brief.md`.
+- The launcher is installed as `~/.local/bin/pi-time`: `pi-time` runs main with the real ledger, `pi-time --branch <b>` runs a branch from a detached worktree under `~/.freshtime/worktrees/` with its own ledger under `~/.freshtime/branches/`.
+- This branch now differs from main only by the ledger plan commits, so the chain drives it: the ownership gate passes with 2 changed files.
+- The plan's "no merge to main" line predates this; the chain's merge card is now the normal review step, decided by Jeremy when it comes up.
+- Next: Jeremy runs `pi-time` once for the first real ledger build on main; the chain runs the ledger plan from Task 1.
