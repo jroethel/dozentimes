@@ -389,7 +389,8 @@ export function record(ctx: Ctx, lt: number, t: number) {
   // the light in transit
   if (lt >= travel) {
     const u = ph(lt, travel, arrive, ease.io2);
-    ctx.lineCap = "round";
+    // butt caps: round caps on overlapping translucent segments would bead the trail
+    ctx.lineCap = "butt";
     for (let i = 0; i < 60; i++) {
       const s0 = Math.max(0, u - 0.3 + (i / 60) * 0.3), s1 = Math.max(0, u - 0.3 + ((i + 1) / 60) * 0.3);
       const A = cometAt(s0, top, bot), B = cometAt(s1, top, bot);
