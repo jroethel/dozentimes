@@ -39,7 +39,7 @@ test("a newer Waiting bullet replaces the older one about the same thing", { tod
   assert.equal(old.invalid_at, "2026-10-09");
 });
 
-test("one ingest of three Next: lines closes each at its successor's date", { todo: "defect: a batch ingest closes every older Next: at the newest date" }, async () => {
+test("one ingest of three Next: lines closes each at its successor's date", async () => {
   const { repo } = build("asof");
   const db = openDb(":memory:");
   await ingestDir(db, repo, NOW);
