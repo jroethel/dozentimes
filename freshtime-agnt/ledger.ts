@@ -150,7 +150,7 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
   const get = db.prepare("SELECT id, invalid_at, replaced_by FROM facts WHERE source_path = ? AND section = ? AND text = ?");
   // ponytail: a removed line that comes back is reopened, so the gap between removal and return is lost.
   // Keep one row per validity window if gap history ever matters.
-  const reopen = db.prepare("UPDATE facts SET invalid_at = NULL WHERE id = ?");
+  const reopen = db.prepare("UPDATE facts SET invalid_at = NULL, closed_by = NULL WHERE id = ?");
   const ins = db.prepare(`INSERT INTO facts (project, section, text, source_path, kind, kind_path, valid_at, recorded_at, source_at, last_verified_at, verified_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'author')`);
   const seen = new Set<string>();
@@ -168,13 +168,14 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     newIds.push({ id: Number(r.lastInsertRowid), f });
     added++;
   }
-  const mark = db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ? WHERE id = ? AND invalid_at IS NULL");
+  // closed_by names the rule that closed the fact; the first rule to close it keeps the name.
+  const mark = db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ?, closed_by = ? WHERE id = ? AND invalid_at IS NULL");
   // (a) "[ ] x" replaced by "[x] x" in the same file
   for (const { id, f } of newIds) {
     if (f.checked !== true) continue;
     const body = f.text.replace(/^\[[xX]\]\s*/, "");
     const olds = db.prepare("SELECT id, text FROM facts WHERE source_path = ? AND invalid_at IS NULL AND text LIKE '[ ]%'").all(path) as FactRow[];
-    for (const o of olds) if (o.text.replace(/^\[ \]\s*/, "") === body) replaced += mark.run(f.valid_at, id, o.id).changes as number;
+    for (const o of olds) if (o.text.replace(/^\[ \]\s*/, "") === body) replaced += mark.run(f.valid_at, id, "checkbox", o.id).changes as number;
   }
   // (b) a "Next:" is replaced by its successor in the same project: the next later-dated one, or the next one
   //     further down the same file on the same day. Each closes at its successor's date, not the newest one's.
@@ -183,7 +184,7 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     .filter((r) => NEXT_RE.test(r.text));
   nexts.forEach((o, i) => {
     const succ = nexts.slice(i + 1).find((n) => n.valid_at > o.valid_at || n.source_path === o.source_path);
-    if (succ) replaced += mark.run(succ.valid_at, succ.id, o.id).changes as number;
+    if (succ) replaced += mark.run(succ.valid_at, succ.id, "next", o.id).changes as number;
   });
   // (d) handoffs are snapshots: a state-like section in a later handoff replaces the same section in earlier ones
   if (isHandoff(path)) {
@@ -194,13 +195,13 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
       const latest = rows[0];
       if (!latest) continue;
       for (const o of rows) {
-        if (o.valid_at < latest.valid_at && o.source_path !== latest.source_path) replaced += mark.run(latest.valid_at, latest.id, o.id).changes as number;
+        if (o.valid_at < latest.valid_at && o.source_path !== latest.source_path) replaced += mark.run(latest.valid_at, latest.id, "handoff_section", o.id).changes as number;
       }
     }
   }
   // (c) lines gone from the file
   const live = db.prepare("SELECT id, section, text FROM facts WHERE source_path = ? AND invalid_at IS NULL").all(path) as FactRow[];
-  for (const r of live) if (!seen.has(r.section + "\u0000" + r.text)) replaced += mark.run(now, null, r.id).changes as number;
+  for (const r of live) if (!seen.has(r.section + "\u0000" + r.text)) replaced += mark.run(now, null, "removed", r.id).changes as number;
   db.prepare("INSERT OR REPLACE INTO sources (path, hash, ingested_at) VALUES (?, ?, ?)").run(path, hashOf(content), now);
   return { added, replaced };
 }
@@ -341,11 +342,11 @@ export function verifyFact(db: DatabaseSync, id: number, now: string): boolean {
   const present = content !== null && extractFacts(f.source_path, content, mtimeDate(f.source_path))
     .some((x) => x.section === f.section && x.text === f.text);
   const ok = present && !cur.invalid_at;
-  db.prepare("INSERT INTO checks (fact_id, ts, age_days, changed, reason) VALUES (?, ?, ?, ?, ?)")
+  db.prepare("INSERT INTO checks (fact_id, ts, age_days, changed, reason, kind) VALUES (?, ?, ?, ?, ?, ?)")
     .run(id, new Date().toISOString(), daysBetween(f.last_verified_at, now), ok ? 0 : 1,
-      content === null ? "file missing" : !present ? "line gone" : cur.invalid_at ? "replaced on re-ingest" : "line present");
+      content === null ? "file missing" : !present ? "line gone" : cur.invalid_at ? "replaced on re-ingest" : "line present", f.kind);
   if (ok) db.prepare("UPDATE facts SET last_verified_at = ?, verified_by = 'source' WHERE id = ?").run(now, id);
-  else db.prepare("UPDATE facts SET invalid_at = ? WHERE id = ? AND invalid_at IS NULL").run(now, id);
+  else db.prepare("UPDATE facts SET invalid_at = ?, closed_by = 'source' WHERE id = ? AND invalid_at IS NULL").run(now, id);
   return !ok;
 }
 

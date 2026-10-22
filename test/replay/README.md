@@ -9,7 +9,9 @@ The freshness table is the data issue #4 needs to fit shelf lives.
 ## Run
 
 `npm run replay`
-Flags are `--roots a:b` (default `~/create:~/repos`), `--max-sources N`, `--out DIR`, and `--jev` to classify with Jev.
+Flags are `--roots a:b` (default `~/create:~/repos`), `--max-sources N`, `--out DIR`, `--jev` to classify with Jev, and `--show-sample RULE`.
+`--show-sample RULE` prints up to 20 evenly spaced unique closures of one rule (for example `handoff_section`) after the report, for a person to grade.
+Each case is the closed line, the line that closed it, and the two files' slugs.
 The default is keyword classification, which is fast and free, but it labels nearly everything `decision`.
 Use `--jev` for a meaningful class table. The report then shows how many facts were classified by Jev and how many fell back to keywords.
 It is not part of `npm test`.
@@ -20,6 +22,8 @@ Output goes to `~/.freshtime/replay/<YYYY-MM-DD>/report.md` and `results.json`.
 The repo is public, so the code holds only the method.
 Reports hold counts and rates, with sources identified by index only.
 No file content, fact text, project name or path is written or printed.
+The one exception is `--show-sample`, which prints fact text to the terminal only.
+It never writes text to `report.md` or `results.json`, and its output must never be redirected into a file in the repo.
 
 ## Method
 
@@ -34,7 +38,8 @@ The ledger set at D comes from the facts table with the same predicate readFacts
 The docs are append-only logs, so a line that a replacement rule closed while it is still in the file is a rule claim, not a miss.
 Results are three buckets:
 - (a) git-truth misses: the line is present at D, the ledger says not valid, and no rule replaced it. Causes are dating, closed without a rule, never extracted.
-- (b) rule-superseded while present: counted separately and split by rule (checkbox, next, handoff-section). The rule is inferred from the replaced fact text and the superseding fact text.
+- (b) rule-superseded while present: counted separately and split by rule (checkbox, next, handoff_section).
+  The rule is the replaced fact's `closed_by` column, which the ledger sets when a rule closes it.
 - (c) precision: false positives, split into backdated lines (heading date earlier than the commit that added them) and missed removals.
 
 Recall is reported against git truth, and also as if rule-superseded lines were misses.

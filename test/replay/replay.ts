@@ -15,6 +15,7 @@ const roots = (flag("--roots") ?? [join(homedir(), "create"), join(homedir(), "r
 const maxSources = Number(flag("--max-sources") ?? Infinity);
 const outDir = flag("--out") ?? join(homedir(), ".freshtime", "replay", isoDate(new Date()));
 const useJev = argv.includes("--jev");
+const showSample = flag("--show-sample"); // prints fact text to the terminal only, never to report.md or results.json
 if (!useJev) process.env.FRESHTIME_JEV = "off"; // keyword classification: fast, free, deterministic
 
 const MIN_COMMITS = 3;
@@ -140,10 +141,10 @@ const key = (rel: string, section: string, text: string): string => `${rel}\0${s
 // fn = git-truth misses (no rule replaced the line). ruleSuperseded = line present at D but closed by a replacement rule.
 interface AsOf { samples: number; tp: number; fp: number; fn: number; ruleSuperseded: number; fnCause: Cnt; ruleCause: Cnt; fpCause: Cnt }
 const newAsOf = (): AsOf => ({ samples: 0, tp: 0, fp: 0, fn: 0, ruleSuperseded: 0, fnCause: {}, ruleCause: {}, fpCause: {} });
-// A rule-superseded fact seen at least once, for the rule (d) over-reach check.
-interface Case { rule: string; diffFile: boolean; diffSlug: boolean }
+// A rule-superseded fact seen at least once, for the rule (d) over-reach check and --show-sample.
+// closed and by hold fact text, so they stay in memory and only --show-sample prints them.
+interface Case { rule: string; diffFile: boolean; diffSlug: boolean; closed: string; by: string; slug: string; bySlug: string }
 const slugOf = (rel: string): string => basename(rel, ".md").replace(/^\d{4}-\d{2}-\d{2}[-_ ]?/, "");
-const NEXT_RE = /^(\[[ xX]\]\s*)?[*_]*next[*_]*\s*:/i;
 
 function truthOf(dir: string, v: Version): Set<string> {
   const s = new Set<string>();
@@ -151,7 +152,7 @@ function truthOf(dir: string, v: Version): Set<string> {
   return s;
 }
 
-interface Row { id: number; key: string; rel: string; text: string; kind: Volatility; kind_path: string; valid_at: string; invalid_at: string | null; replaced_by: number | null; recorded_at: string }
+interface Row { id: number; key: string; rel: string; text: string; kind: Volatility; kind_path: string; valid_at: string; invalid_at: string | null; replaced_by: number | null; closed_by: string; recorded_at: string }
 
 function asOfCheck(dir: string, versions: Version[], rows: Row[], a: AsOf, cases: Map<number, Case>): void {
   const dates = new Set<string>();
@@ -178,10 +179,10 @@ function asOfCheck(dir: string, versions: Version[], rows: Row[], a: AsOf, cases
       if (r && r.invalid_at !== null && r.invalid_at <= D && r.replaced_by !== null && r.valid_at <= D) {
         a.ruleSuperseded++;
         const sup = byId.get(r.replaced_by);
-        const rule = sup && /^\[[ xX]\]/.test(r.text) && /^\[[xX]\]/.test(sup.text) && r.text.replace(/^\[ \]\s*/, "") === sup.text.replace(/^\[[xX]\]\s*/, "") ? "checkbox"
-          : NEXT_RE.test(r.text) ? "next" : "handoff_section";
+        const rule = r.closed_by;
         bump(a.ruleCause, rule);
-        if (!cases.has(r.id)) cases.set(r.id, { rule, diffFile: !!sup && sup.rel !== r.rel, diffSlug: !!sup && slugOf(sup.rel) !== slugOf(r.rel) });
+        if (!cases.has(r.id)) cases.set(r.id, { rule, diffFile: !!sup && sup.rel !== r.rel, diffSlug: !!sup && slugOf(sup.rel) !== slugOf(r.rel),
+          closed: r.text, by: sup?.text ?? "", slug: slugOf(r.rel), bySlug: sup ? slugOf(sup.rel) : "" });
         continue;
       }
       a.fn++;
@@ -278,8 +279,8 @@ async function main(): Promise<void> {
           for (const rel of apply(dir, prev, v)) await ingestFile(db, join(dir, rel), v.date);
           prev = v.files;
         }
-        const rows = (db.prepare("SELECT id, source_path, section, text, kind, kind_path, valid_at, invalid_at, replaced_by, recorded_at FROM facts").all() as any[])
-          .map((r): Row => ({ id: r.id, rel: r.source_path.slice(dir.length + 1), text: r.text, kind: r.kind, kind_path: r.kind_path, key: key(r.source_path.slice(dir.length + 1), r.section, r.text), valid_at: r.valid_at, invalid_at: r.invalid_at, replaced_by: r.replaced_by, recorded_at: r.recorded_at }));
+        const rows = (db.prepare("SELECT id, source_path, section, text, kind, kind_path, valid_at, invalid_at, replaced_by, closed_by, recorded_at FROM facts").all() as any[])
+          .map((r): Row => ({ id: r.id, rel: r.source_path.slice(dir.length + 1), text: r.text, kind: r.kind, kind_path: r.kind_path, key: key(r.source_path.slice(dir.length + 1), r.section, r.text), valid_at: r.valid_at, invalid_at: r.invalid_at, replaced_by: r.replaced_by, closed_by: r.closed_by, recorded_at: r.recorded_at }));
         const a = newAsOf();
         const cases = new Map<number, Case>();
         asOfCheck(dir, versions, rows, a, cases);
@@ -306,7 +307,8 @@ async function main(): Promise<void> {
   // Rule (d) over-reach check: is the superseding fact in a different file about a different unit of work (different slug)?
   const dCases = allCases.filter((c) => c.rule === "handoff_section");
   const real = (c: Case): boolean => c.diffFile && c.diffSlug;
-  const sample = dCases.length <= 20 ? dCases : Array.from({ length: 20 }, (_, i) => dCases[Math.floor((i * dCases.length) / 20)]);
+  const spaced = (cs: Case[]): Case[] => (cs.length <= 20 ? cs : Array.from({ length: 20 }, (_, i) => cs[Math.floor((i * cs.length) / 20)]));
+  const sample = spaced(dCases);
   const overreach = {
     unique_rule_d_cases: dCases.length, real_all: dCases.filter(real).length, share_all: ratio(dCases.filter(real).length, dCases.length),
     sample_size: sample.length, real_sample: sample.filter(real).length, share_sample: ratio(sample.filter(real).length, sample.length),
@@ -396,6 +398,11 @@ async function main(): Promise<void> {
   writeFileSync(join(outDir, "results.json"), JSON.stringify(res, null, 2));
   writeFileSync(join(outDir, "report.md"), md);
   console.log(md);
+  if (showSample) {
+    const cs = spaced(allCases.filter((c) => c.rule === showSample));
+    console.log(`\n## Sample of ${cs.length} ${showSample} closures (terminal only)\n`);
+    cs.forEach((c, i) => console.log(`${i + 1}. [${c.slug}] ${c.closed}\n   closed by [${c.bySlug}] ${c.by}`));
+  }
 }
 
 await main();
