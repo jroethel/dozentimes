@@ -3,7 +3,7 @@
 
 export type AsOfMode = "current" | "past" | "range" | "future" | "mixed" | "none";
 export type Basis = "stated" | "inherited" | "default";
-export type Path = "jev" | "fallback";
+export type Path = "jev" | "fallback" | "manual"; // manual = the model set the reading through ledger_query
 export type Volatility = "identity" | "preference" | "decision" | "status";
 export type FactStatus = "current" | "replaced" | "needs_check" | "current_then";
 

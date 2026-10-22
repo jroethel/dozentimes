@@ -33,6 +33,15 @@ function out(ctx: Ctx, text: string, level: "info" | "warning" | "error" = "info
   if (!ctx.hasUI) console.error(text);
 }
 
+// One trace output as short key=value pairs, so a trace fits on one line.
+function brief(output: unknown): string {
+  try {
+    const o = JSON.parse(String(output)) as Record<string, unknown>;
+    if (o.asof_mode) return `${o.asof_mode} ${(o.anchor as { start?: string } | null)?.start ?? ""} ${o.basis}`.replace(/\s+/g, " ");
+    return Object.entries(o).filter(([, v]) => typeof v !== "object").map(([k, v]) => `${k}=${v}`).join(" ");
+  } catch { return String(output ?? ""); }
+}
+
 const need = (): DatabaseSync => {
   if (!db) db = openDb();
   return db;
@@ -50,15 +59,22 @@ async function ingest(): Promise<string> {
   const r = await ingestPaths(d, paths, now);
   const s = summary(d, now);
   const split = Object.entries(s.kindPaths).map(([k, n]) => `${k} ${n}`).join(", ") || "none";
-  return `${empty ? "Built ledger" : "Refreshed ledger"}: ${paths.length}/${all.length} sources ingested, ${r.added} facts added, ${r.replaced} replaced. Classification: ${split}.`;
+  return `${empty ? "Built ledger" : "Refreshed ledger"}: ${paths.length} of ${all.length} sources new or changed, ${r.added} facts added, ${r.replaced} replaced. Classification: ${split}.`;
 }
 
 function remaining(): { source: string; lines: string[] } {
   try {
-    const j = execFileSync("gh", ["issue", "list", "--repo", ISSUE_REPO, "--label", "agent:todo", "--state", "open", "--json", "number,title"],
-      { timeout: 2000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-    const issues = JSON.parse(j) as { number: number; title: string }[];
-    return { source: "GitHub agent:todo issues", lines: issues.map((i) => `#${i.number} ${i.title}`) };
+    const j = execFileSync("gh", ["issue", "list", "--repo", ISSUE_REPO, "--state", "open", "--json", "number,title,labels"],
+      { timeout: 4000, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const issues = JSON.parse(j) as { number: number; title: string; labels: { name: string }[] }[];
+    const tagged = (l: string) => issues.filter((i) => i.labels.some((x) => x.name === l));
+    const lines = [
+      ...tagged("agent:needs-input").map((i) => `#${i.number} ${i.title} (needs you)`),
+      ...tagged("agent:todo").map((i) => `#${i.number} ${i.title}`),
+    ];
+    const ideas = tagged("idea").length;
+    if (ideas) lines.push(`${ideas} parked ideas (label idea)`);
+    return { source: `GitHub issues, ${ISSUE_REPO}`, lines };
   } catch {
     const f = join(REPO, "REMAINING.md");
     if (!existsSync(f)) return { source: "none (gh failed, no REMAINING.md)", lines: [] };
@@ -136,7 +152,7 @@ const queryTool = defineTool({
     if (["past", "range", "mixed"].includes(mode) && !params.anchor_date) throw new Error(`asof_mode ${mode} needs anchor_date`);
     const intent: TemporalIntent | null = params.asof_mode || params.anchor_date
       ? { asof_mode: mode, anchor: params.anchor_date ? { start: params.anchor_date, end: params.anchor_date, text: params.anchor_date } : null,
-          basis: "stated", kinds: [], confidence: 1, path: "fallback", query: params.question }
+          basis: "stated", kinds: [], confidence: 1, path: "manual", query: params.question }
       : null;
     const res = readFacts(need(), intent, { now: today(), ledger: true, verify: true, query: params.question });
     return { ...text(renderFacts(intent, res)), details: { intent, facts: res.facts, checks: res.checks, caught: res.caught } };
@@ -178,7 +194,8 @@ async function command(args: string, ctx: Ctx): Promise<void> {
   const now = today();
   const [sub, arg] = args.trim().split(/\s+/);
   const traces = (n: number): string =>
-    recentTraces(d, n).map((t) => `${t.ts} ${t.tool} ${t.path ?? "-"} ${t.ms ?? "-"}ms ${t.error ?? ""} ${t.output ?? ""}`.trim()).join("\n");
+    recentTraces(d, n).map((t) =>
+      `${String(t.ts).slice(11, 19)} ${String(t.tool).padEnd(12)} ${String(t.path ?? "-").padEnd(8)} ${String(t.ms ?? "-").padStart(4)}ms ${t.error ? `ERROR ${t.error}` : brief(t.output)}`.slice(0, 90)).join("\n");
   let msg: string;
   if (sub === "ingest") msg = await ingest();
   else if (sub === "maintain") { const r = maintain(d, now, Number(arg ?? 10) || 10); msg = `maintain: checked ${r.checked}, changed ${r.changed}`; }
@@ -190,8 +207,8 @@ async function command(args: string, ctx: Ctx): Promise<void> {
   else {
     const s = summary(d, now);
     msg = [
-      `facts ${s.total}  status ${JSON.stringify(s.byStatus)}  fallback traces ${s.fallbacks}`,
-      `kind ${JSON.stringify(s.byKind)}`,
+      `facts ${s.total}: ${Object.entries(s.byStatus).map(([k, n]) => `${n} ${k}`).join(", ")} | Jev failures ${s.fallbacks}`,
+      `kinds: ${Object.entries(s.byKind).map(([k, n]) => `${n} ${k}`).join(", ")}`,
       `session as-of: ${session.ambient ? session.ambient.text : "none"}`,
       "top projects:", ...s.byProject.map(([p, n]) => `  ${n}  ${p}`),
       "last 10 traces:", traces(10),
@@ -229,7 +246,7 @@ export default function (pi: ExtensionAPI) {
     try { report.push(remainingText()); } catch (e) { report.push(`remaining work unavailable: ${e instanceof Error ? e.message : String(e)}`); }
     const msg = report.join("\n");
     ctx.ui.notify(msg, "info");
-    for (const l of msg.split("\n")) console.error(`[pi-time] ${l}`);
+    if (!ctx.hasUI) for (const l of msg.split("\n")) console.error(`[pi-time] ${l}`);
     status(ctx);
   });
 
@@ -237,11 +254,11 @@ export default function (pi: ExtensionAPI) {
     try {
       const intent = await parse(e.prompt);
       turn = { prompt: e.prompt, intent };
-      console.error(`[pi-time] reading: ${describeIntent(intent)} | mode ${intent.asof_mode} anchor ${intent.anchor?.start ?? "none"} basis ${intent.basis} path ${intent.path}`);
+      if (!ctx.hasUI) console.error(`[pi-time] reading: ${describeIntent(intent)} | mode ${intent.asof_mode} anchor ${intent.anchor?.start ?? "none"} basis ${intent.basis} path ${intent.path}`);
       status(ctx);
       return { systemPrompt: e.systemPrompt + guidance(intent) };
     } catch (err) {
-      console.error(`[pi-time] intent parse failed: ${err instanceof Error ? err.message : String(err)}`);
+      out(ctx, `[pi-time] intent parse failed: ${err instanceof Error ? err.message : String(err)}`, "error");
     }
   });
 

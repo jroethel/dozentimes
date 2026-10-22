@@ -120,14 +120,15 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
   let added = 0, replaced = 0;
   const get = db.prepare("SELECT id FROM facts WHERE source_path = ? AND section = ? AND text = ?");
   const ins = db.prepare(`INSERT INTO facts (project, section, text, source_path, kind, kind_path, valid_at, recorded_at, source_at, last_verified_at, verified_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ingest')`);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'author')`);
   const seen = new Set<string>();
   const newIds: { id: number; f: ExtractedFact }[] = [];
   for (const f of facts) {
     seen.add(f.section + "\u0000" + f.text);
     if (get.get(path, f.section, f.text)) continue;
     const c = kinds.get(f.text) ?? { kind: keywordKind(f.text), path: "keyword" as const };
-    const r = ins.run(f.project, f.section, f.text, path, c.kind, c.path, f.valid_at, now, mtime, now);
+    // Reading a line is not checking it: the last confirmation is when its author wrote it down.
+    const r = ins.run(f.project, f.section, f.text, path, c.kind, c.path, f.valid_at, now, mtime, f.valid_at);
     newIds.push({ id: Number(r.lastInsertRowid), f });
     added++;
   }
@@ -318,7 +319,7 @@ export function summary(db: DatabaseSync, now: string) {
     proj[r.project] = (proj[r.project] ?? 0) + 1;
   }
   const byProject = Object.entries(proj).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const fallbacks = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE path = 'fallback'").get() as FactRow).n as number;
+  const fallbacks = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE path = 'fallback' AND error IS NOT NULL").get() as FactRow).n as number;
   const kindPaths = db.prepare("SELECT kind_path, COUNT(*) AS n FROM facts GROUP BY kind_path").all() as FactRow[];
   const lastIngest = (db.prepare("SELECT MAX(ts) AS ts FROM traces WHERE tool = 'agnt.ingest'").get() as FactRow).ts as string | null;
   return { total: rows.length, byStatus, byKind, byProject, fallbacks, kindPaths: Object.fromEntries(kindPaths.map((r) => [r.kind_path, r.n])), lastIngest };

@@ -28,7 +28,19 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - `node --test` for tests.
 
 ## Status
-- [x] Read research pages, chose stack, asked guardrail questions.
-- [ ] Research notes: docs/research/jev-api.md, docs/research/pi-extensions.md, corpus survey (subagents running).
-- [ ] Contract and ablation test written first.
-- [ ] core, intf, agnt, pi-time built against the test.
+- [x] Research notes in docs/research/ (Jev API, pi extensions), corpus survey.
+- [x] core, intf, agnt, ablation test, pi-time extension. `npm test` 20/20.
+- [x] Ablation (fallback and Jev paths): both 100% right status and 0 harm. Status gains add (interaction 0), harm falls superadditively (interaction -2), cold re-reads 8 vs 18.
+- [x] Interactive E2E in a herdr pane on a throwaway ledger: past as-of, inherited follow-up, now question with 7 re-checks, /freshtime and /freshtime trace.
+- [x] Remaining work filed as GitHub issues #1-#11. pi-time lists them at startup.
+- Next: Jeremy runs `./pi-time/pi-time` for the first real ledger build (~/.freshtime/ledger.db does not exist yet, so the first run builds it, about 8 seconds).
+
+## Judgment calls (reversible)
+- One language (TypeScript on Node 26), because pi extensions run in-process. No Python or Rust.
+- SQLite FTS5 for retrieval instead of qmd (issue #11).
+- Learning guides not ingested yet (issue #2). Sources are whats_next.md, HANDOFF.md, docs/handoffs/*.md.
+- last_verified_at at ingest is the date the author wrote the line, not the ingest date. Otherwise every first build reads as all fresh.
+- Jev's as-of choice cannot override an inherited reading unless Jev also says the question changes the period. Live Jev otherwise read "And the next step for alpha?" as future.
+- The ablation reports a cold mode (fresh ledger per question) for re-read spend, because in the carried script one early "now" question pays for later checks.
+- The launcher passes `--no-skills`, so shared ~/.agents skills stay out of pi-time. It symlinks auth.json and fd from ~/.pi/agent, both gitignored.
+- The 20-question intent score (rules 20/20, Jev 19/20) is a regression check, not accuracy, because the labels were written next to the rules (issue #1).

@@ -10,7 +10,12 @@ export FRESHTIME_REPO="$(dirname "$here")"
 if [ ! -e "$PI_CODING_AGENT_DIR/auth.json" ] && [ -f "$HOME/.pi/agent/auth.json" ]; then
   ln -s "$HOME/.pi/agent/auth.json" "$PI_CODING_AGENT_DIR/auth.json"
 fi
+# Reuse pi's fd so pi-time does not download a copy into the repo.
+if [ ! -e "$PI_CODING_AGENT_DIR/bin/fd" ] && [ -x "$HOME/.pi/agent/bin/fd" ]; then
+  mkdir -p "$PI_CODING_AGENT_DIR/bin" && ln -s "$HOME/.pi/agent/bin/fd" "$PI_CODING_AGENT_DIR/bin/fd"
+fi
 if [ ! -d "$FRESHTIME_REPO/node_modules/chrono-node" ]; then
   (cd "$FRESHTIME_REPO" && npm install --silent)
 fi
-exec pi "$@"
+# --no-skills keeps the shared ~/.agents skills out, so pi-time stays about time.
+exec pi --no-skills "$@"

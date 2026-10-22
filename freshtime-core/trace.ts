@@ -18,5 +18,5 @@ export function trace(db: DatabaseSync, row: TraceRow): void {
 }
 
 export function recentTraces(db: DatabaseSync, n = 10): Record<string, unknown>[] {
-  return db.prepare("SELECT ts, tool, path, ms, error, substr(output, 1, 160) AS output FROM traces ORDER BY id DESC LIMIT ?").all(n) as Record<string, unknown>[];
+  return db.prepare("SELECT ts, tool, path, ms, error, output FROM traces ORDER BY id DESC LIMIT ?").all(n) as Record<string, unknown>[];
 }

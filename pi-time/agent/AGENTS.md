@@ -16,3 +16,4 @@ Fact statuses:
 For any question about projects, plans, status or decisions, call `freshtime_ask` first.
 Keep answers short.
 Start with one line stating the time reading, for example "Answering as of 2026-10-14".
+Use plain hyphens, never the em dash character.

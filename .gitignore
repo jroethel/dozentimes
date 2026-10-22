@@ -7,3 +7,4 @@ pi-time/agent/auth.json
 pi-time/agent/models-store.json
 pi-time/agent/trust.json
 .scratch-pi/
+pi-time/agent/bin/
