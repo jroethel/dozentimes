@@ -18,6 +18,8 @@ export interface ExtractedFact {
 
 const DATE_RE = /\d{4}-\d{2}-\d{2}/;
 const NEXT_RE = /^(\[[ xX]\]\s*)?[*_]*next[*_]*\s*:/i;
+const STATE_SECTION = /\b(state|status|next|open|blocked|recent|remaining|resume|current)\b/i;
+const isHandoff = (p: string): boolean => /\/docs\/handoffs\/[^/]+\.md$/.test(p) || basename(p) === "HANDOFF.md";
 
 export function projectOf(path: string): string {
   const dir = dirname(path);
@@ -25,7 +27,34 @@ export function projectOf(path: string): string {
   return basename(root);
 }
 
+const stripTags = (h: string): string =>
+  h.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+
+// Learning guides: each <dt> (and the first cell of each table body row) is a fact, under its <h2>.
+// Dated by the h2 "(YYYY-MM-DD" if present, else the last date in <title>, else the file mtime.
+function extractHtml(path: string, html: string, fileMtime: string): ExtractedFact[] {
+  const project = projectOf(path);
+  const titleDates = (html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "").match(/\d{4}-\d{2}-\d{2}/g);
+  const fileDate = titleDates?.at(-1) ?? fileMtime;
+  const out: ExtractedFact[] = [];
+  let section = "", date = fileDate;
+  const re = /<h2[^>]*>([\s\S]*?)<\/h2>|<dt[^>]*>([\s\S]*?)<\/dt>|<tr[^>]*>\s*<td[^>]*>([\s\S]*?)<\/td>/gi;
+  for (const m of html.matchAll(re)) {
+    if (m[1] !== undefined) {
+      section = stripTags(m[1]);
+      date = section.match(DATE_RE)?.[0] ?? fileDate;
+      continue;
+    }
+    const text = stripTags(m[2] ?? m[3] ?? "");
+    if (text.length < 12) continue;
+    out.push({ project, section, text, checked: null, valid_at: date, source_path: path });
+  }
+  return out;
+}
+
 export function extractFacts(path: string, text: string, fileMtime: string): ExtractedFact[] {
+  if (path.endsWith(".html")) return extractHtml(path, text, fileMtime);
   const project = projectOf(path);
   const fileDate = basename(path).match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? fileMtime;
   const out: ExtractedFact[] = [];
@@ -141,11 +170,28 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     for (const o of olds) if (o.text.replace(/^\[ \]\s*/, "") === body) replaced += mark.run(f.valid_at, id, o.id).changes as number;
   }
   // (b) later-dated "Next:" replaces earlier ones in the same project
-  const nexts = (db.prepare("SELECT id, text, valid_at FROM facts WHERE project = ? AND invalid_at IS NULL ORDER BY valid_at DESC, id DESC").all(facts[0]?.project ?? projectOf(path)) as FactRow[])
+  //     A same-day "Next:" earlier in the same file is replaced too, since files are written top to bottom.
+  const project = facts[0]?.project ?? projectOf(path);
+  const nexts = (db.prepare("SELECT id, text, valid_at, source_path FROM facts WHERE project = ? AND invalid_at IS NULL ORDER BY valid_at DESC, id DESC").all(project) as FactRow[])
     .filter((r) => NEXT_RE.test(r.text));
   if (nexts.length > 1) {
     const latest = nexts[0];
-    for (const o of nexts.slice(1)) if (o.valid_at < latest.valid_at) replaced += mark.run(latest.valid_at, latest.id, o.id).changes as number;
+    for (const o of nexts.slice(1)) {
+      if (o.valid_at < latest.valid_at || o.source_path === latest.source_path) replaced += mark.run(latest.valid_at, latest.id, o.id).changes as number;
+    }
+  }
+  // (d) handoffs are snapshots: a state-like section in a later handoff replaces the same section in earlier ones
+  if (isHandoff(path)) {
+    const sections = new Set(facts.map((f) => f.section.toLowerCase()).filter((t) => STATE_SECTION.test(t)));
+    for (const sec of sections) {
+      const rows = (db.prepare("SELECT id, valid_at, source_path FROM facts WHERE project = ? AND lower(section) = ? AND invalid_at IS NULL ORDER BY valid_at DESC, id ASC").all(project, sec) as FactRow[])
+        .filter((r) => isHandoff(r.source_path));
+      const latest = rows[0];
+      if (!latest) continue;
+      for (const o of rows) {
+        if (o.valid_at < latest.valid_at && o.source_path !== latest.source_path) replaced += mark.run(latest.valid_at, latest.id, o.id).changes as number;
+      }
+    }
   }
   // (c) lines gone from the file
   const live = db.prepare("SELECT id, section, text FROM facts WHERE source_path = ? AND invalid_at IS NULL").all(path) as FactRow[];
@@ -189,7 +235,8 @@ export function discoverSources(roots: string[]): string[] {
         if (depth + 1 < 4) walk(p, depth + 1);
       } else if (e.isFile()) {
         const inHandoffs = e.name.endsWith(".md") && basename(dir) === "handoffs" && basename(dirname(dir)) === "docs";
-        if (e.name === "whats_next.md" || e.name === "HANDOFF.md" || inHandoffs) found.add(p);
+        const guide = /^learning_guide.*\.html$/.test(e.name);
+        if (e.name === "whats_next.md" || e.name === "HANDOFF.md" || inHandoffs || guide) found.add(p);
       }
     }
   };
@@ -237,7 +284,12 @@ export function readFacts(
     const where = !past ? "" : mode === "mixed" ? ` AND (${pastSql} OR (f.invalid_at IS NULL AND f.valid_at > @end))` : ` AND ${pastSql}`;
     const params: Record<string, string | number> = { q, lim: opts.limit ?? 8 };
     if (past) { params.start = anchor.start; params.end = anchor.end; }
-    const rows = db.prepare(`SELECT f.* FROM facts_fts JOIN facts f ON f.id = facts_fts.rowid WHERE facts_fts MATCH @q${where} ORDER BY bm25(facts_fts) LIMIT @lim`).all(params) as FactRow[];
+    // ponytail: text match picks a pool, then live and newer facts win the slots. A real ranker would blend the two.
+    const lim = Number(params.lim);
+    params.lim = lim * 5;
+    const rows = (db.prepare(`SELECT f.* FROM facts_fts JOIN facts f ON f.id = facts_fts.rowid WHERE facts_fts MATCH @q${where} ORDER BY bm25(facts_fts) LIMIT @lim`).all(params) as FactRow[])
+      .sort((a, b) => Number(!!a.invalid_at) - Number(!!b.invalid_at) || (a.valid_at < b.valid_at ? 1 : a.valid_at > b.valid_at ? -1 : 0))
+      .slice(0, lim);
     const wasValid = (r: FactRow): boolean => r.valid_at <= anchor!.end && (!r.invalid_at || r.invalid_at > anchor!.start);
     for (let r of rows) {
       let status: FactStatus;

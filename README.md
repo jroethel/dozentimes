@@ -18,7 +18,7 @@ The design comes from the October 2026 memory-systems research, "Two tools, one 
 ./pi-time/pi-time
 ```
 
-The first run builds the ledger at `~/.freshtime/ledger.db` from `whats_next.md`, `HANDOFF.md` and `docs/handoffs/*.md` under `~/create` and `~/repos`.
+The first run builds the ledger at `~/.freshtime/ledger.db` from `whats_next.md`, `HANDOFF.md`, `docs/handoffs/*.md` and `learning_guide*.html` under `~/create` and `~/repos`.
 It then lists the remaining work.
 Set `FRESHTIME_ROOTS` (colon-separated) to scan other folders, and `FRESHTIME_DB` to use another ledger file.
 
@@ -57,16 +57,19 @@ Four configurations answer it: no tools, intent only, ledger only, both.
 | ------ | ------------ | ------------------------- | -------------- |
 | none   | 36%          | 4                         | 0              |
 | intf   | 79%          | 2                         | 0              |
-| agnt   | 57%          | 4                         | 18             |
-| both   | 100%         | 0                         | 8              |
+| agnt   | 57%          | 4                         | 24             |
+| both   | 100%         | 0                         | 9              |
 
 On status accuracy the two tools add up.
 Intent fixes the historical questions and the ledger fixes the current ones.
 On harm they do more than add up.
 The ledger alone removes no harm, because re-checking finds the newest fact and then shows it as true for questions about the past.
-Intent tells the ledger which time each question is about, so both together show nothing false as true and spend fewer than half the re-reads.
+Intent tells the ledger which time each question is about, so both together show nothing false as true and spend well under half the re-reads.
 
 These are synthetic fixtures written for this test, so they show the mechanism, not a measured rate on real data.
+
+On the real corpus (69 files on 2026-10-22) the first build takes about 13 seconds and yields about 1,870 facts, classified by Jev.
+About 48 are replaced by later lines and about 670 are past their shelf life, so a "now" question re-checks those before using them.
 
 ## Privacy
 

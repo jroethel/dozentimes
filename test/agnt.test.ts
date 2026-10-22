@@ -132,3 +132,36 @@ test("classify falls back to keywords with Jev off", async () => {
   const r = await classify(["[ ] do the thing", "decided to use X not Y", "she prefers short answers", "plain note about a thing"]);
   assert.deepEqual(r.map((x) => x.kind), ["status", "decision", "preference", "decision"]);
 });
+
+test("learning guide html: dt and table facts, dated by h2 then title", () => {
+  const html = `<html><head><title>Learning Guide - Demo (2026-07-01 to 2026-09-30)</title></head><body>
+<h2>1. Principles that emerged</h2><section class="card"><dl><dt>Files never move; state lives in metadata.</dt><dd>why</dd></dl></section>
+<h2>5. Adapter build (2026-08-11, evening)</h2><table><tr><th>Decision</th><th>Alternatives</th></tr>
+<tr><td>Use <code>SQLite</code> &amp; FTS5 for search</td><td>Postgres</td></tr></table><dl><dt>short</dt></dl></body></html>`;
+  const f = extractFacts("/x/demo/learning_guide.html", html, "2026-10-20");
+  assert.deepEqual(f.map((x) => [x.text, x.valid_at, x.project]), [
+    ["Files never move; state lives in metadata.", "2026-09-30", "demo"],
+    ["Use SQLite & FTS5 for search", "2026-08-11", "demo"],
+  ]);
+});
+
+test("same-day Next: earlier in the file is replaced by the later one", async () => {
+  const dir = tmp(), db = openDb(":memory:");
+  const p = write(dir, "alpha/whats_next.md", "## Status\n- Next: pick the first test to run\n## 2026-10-14 session\n- Next: decide on the beachhead market\n");
+  utimesSync(p, new Date(2026, 9, 14, 12), new Date(2026, 9, 14, 12));
+  await ingestFile(db, p, "2026-10-15");
+  const r = read(db, "Next");
+  assert.equal(r.facts.find((f) => f.text.includes("first test"))?.status, "replaced");
+  assert.notEqual(r.facts.find((f) => f.text.includes("beachhead"))?.status, "replaced");
+});
+
+test("a state section in a later handoff replaces the same section in an earlier one", async () => {
+  const dir = tmp(), db = openDb(":memory:");
+  const a = write(dir, "proj/docs/handoffs/2026-10-01.a.md", "## State\n- the parser is half written\n## Decisions\n- decided to keep the parser in TypeScript\n");
+  const b = write(dir, "proj/docs/handoffs/2026-10-09.b.md", "## State\n- the parser is merged and released\n");
+  await ingestPaths(db, [b, a], "2026-10-10"); // order must not matter
+  const r = read(db, "parser");
+  assert.equal(r.facts.find((f) => f.text.includes("half written"))?.status, "replaced");
+  assert.notEqual(r.facts.find((f) => f.text.includes("merged and released"))?.status, "replaced");
+  assert.notEqual(r.facts.find((f) => f.text.includes("TypeScript"))?.status, "replaced");
+});

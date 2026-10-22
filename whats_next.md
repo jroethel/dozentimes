@@ -30,15 +30,17 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 ## Status
 - [x] Research notes in docs/research/ (Jev API, pi extensions), corpus survey.
 - [x] core, intf, agnt, ablation test, pi-time extension. `npm test` 20/20.
-- [x] Ablation (fallback and Jev paths): both 100% right status and 0 harm. Status gains add (interaction 0), harm falls superadditively (interaction -2), cold re-reads 8 vs 18.
+- [x] Ablation (fallback and Jev paths): both 100% right status and 0 harm. Status gains add (interaction 0), harm falls superadditively (interaction -2), cold re-reads 9 vs 24.
 - [x] Interactive E2E in a herdr pane on a throwaway ledger: past as-of, inherited follow-up, now question with 7 re-checks, /freshtime and /freshtime trace.
 - [x] Remaining work filed as GitHub issues #1-#11. pi-time lists them at startup.
-- Next: Jeremy runs `./pi-time/pi-time` for the first real ledger build (~/.freshtime/ledger.db does not exist yet, so the first run builds it, about 8 seconds).
+- Next: Jeremy runs `./pi-time/pi-time` for the first real ledger build (~/.freshtime/ledger.db does not exist yet, so the first run builds it, about 13 seconds).
 
 ## Judgment calls (reversible)
 - One language (TypeScript on Node 26), because pi extensions run in-process. No Python or Rust.
 - SQLite FTS5 for retrieval instead of qmd (issue #11).
-- Learning guides not ingested yet (issue #2). Sources are whats_next.md, HANDOFF.md, docs/handoffs/*.md.
+- Learning guides are ingested: each <dt> and first table cell is a fact, dated by its h2 date or the title's last date (closed #2).
+- Replacement now also covers same-day Next: lines in one file and state-like sections (State, Next step, Recent artifacts) of a later handoff. Before this, 0 of 809 real facts were ever replaced.
+- Retrieval takes a text-match pool of 5x the limit, then prefers live and newer facts.
 - last_verified_at at ingest is the date the author wrote the line, not the ingest date. Otherwise every first build reads as all fresh.
 - Jev's as-of choice cannot override an inherited reading unless Jev also says the question changes the period. Live Jev otherwise read "And the next step for alpha?" as future.
 - The ablation reports a cold mode (fresh ledger per question) for re-read spend, because in the carried script one early "now" question pays for later checks.
