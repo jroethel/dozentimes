@@ -76,5 +76,6 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Asked: a plan for #3, #4, #5, #6, #7 and #12, in a form Rubix review can run on. #1 and #13 are held, and #13's schema feeds #1's blind set.
 - Plan: docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md, eight serial tasks, all on freshtime-agnt/ledger.ts.
 - Decided by Jeremy: rule (d) replaces only within a shared slug or when the later handoff names the earlier one (#12).
-- Every test in the plan was run against HEAD f87a374 and fails for the predicted reason.
+- Every test in the plan was run against HEAD f87a374 and behaves as its task predicts, except Task 4's one-word guard, which needs Task 1's closed_by column first.
+- The e2e statement wording was checked offline with the fallback parser: s2 needs "today", or it inherits q7's Sep 30 as-of.
 - Next: Rubix review of the plan, then execution. Nothing is executed yet.
