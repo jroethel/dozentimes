@@ -188,6 +188,45 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
-<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8) and the video session (section 9). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
+<h2>10. Updates - the ledger issues chain (2026-10-22)</h2>
+<section class="card">
+<dl>
+<dt>Six issues closed through one serial plan, with the decisions D1 to D16 recorded as they were taken.</dt>
+<dd>Issues #3, #4, #5, #6, #7 and #12 ran as eight serial tasks in <code>docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md</code>, every task touching <code>freshtime-agnt/ledger.ts</code>, each ending in <code>npm test</code> with <code>fail 0</code>.</dd>
+<dt>D1, Jeremy: rule (d) applies only between handoffs that share a slug, or where the later one names the earlier file.</dt>
+<dd>All 1842 unique rule (d) cases in the 2026-10-22 replay crossed into a different file with a different slug, and project-wide (d) let one task's State close another task's.</dd>
+<dt>D2, planner: same-day order comes from the naming reference, not file mtime, and same slug plus same date never replaces.</dt>
+<dd>The ledger stores no time of day, and the naming reference gives a direction without a clock.</dd>
+<dt>D3, planner: new <code>facts.closed_by</code> and <code>checks.kind</code> columns record which rule closed a fact and the class a check was made under.</dt>
+<dd>#3 needs to tell a user close from a removed line, #6 needs to tell a rewording from a change, and the replay reads the rule from the column instead of guessing from text.</dd>
+<dt>D4, planner: the model records statements through a new <code>ledger_record</code> tool, by fact id, and the tool echoes the fact text.</dt>
+<dt>D5, planner: a changed value becomes a conversation fact with <code>source_path conversation:&lt;project&gt;</code>.</dt>
+<dd>A fact with a made-up file path would be closed by rule (c) or <code>verifyFact</code> the first time it went stale.</dd>
+<dt>D6, planner: a user close survives re-ingest while the file line is unchanged; a later doc edit does not yet close a conversation fact.</dt>
+<dd>The second half is the open follow-up, filed at checkpoint D.</dd>
+<dt>D7, planner: a statement about a fact that is not live is refused, except "still holds" on a user-closed fact, which undoes the close.</dt>
+<dd>This is the undo for a wrong <code>ledger_record</code> call that the Rubix review asked for.</dd>
+<dt>D8, Jeremy at checkpoint C: exponential current-status fit on source and reword checks, at least 30 distinct facts, stale risk 0.25, clamped to 1 to 365 days.</dt>
+<dd>Checks rows from source re-reads only exist for facts already past their shelf life, so the data is censored, and user statements are excluded because the person mostly speaks up when something changed.</dd>
+<dt>D9, planner: reclassify in <code>maintain</code>, at most 40 rows (one Jev request) per call, never at startup.</dt>
+<dd>One Jev chunk can wait 30 seconds, so reclassifying thousands of rows at pi startup during a Jev outage would stall startup for minutes.</dd>
+<dt>D10, planner: rewording is word-set Jaccard of at least 0.8 within one file and section, with equal number tokens and equal negation words, no Jev.</dt>
+<dd>A changed port number in a 12-word line scores 0.85 and an added "not" scores 0.91, so length alone does not protect a long line.</dd>
+<dt>D11, planner: rule (e) replaces a status-family bullet with a later one in the same file when the text after the prefix overlaps 0.5 or more.</dt>
+<dd>"Waiting on the vendor price sheet" and "Waiting on the DBA for credentials" are two open dependencies, so the remainder must overlap.</dd>
+<dt>D12, Jeremy at checkpoint B: narrative bullets in older handoffs are not replaced.</dt>
+<dd>A narrative bullet records an event that stays true, so its staleness is left to shelf lives.</dd>
+<dt>D13, planner: replay gates use keyword classification and a fresh baseline taken before Task 1.</dt>
+<dt>D14, planner: the end-to-end statement turns live in a new <code>test/e2e/statements.json</code>.</dt>
+<dt>D15, Jeremy: replay gets a <code>--show-sample</code> flag that prints 20 closures of one rule to the terminal only, never to a file.</dt>
+<dd>The replay gates count how often a rule fires, not whether it fired correctly, so a person has to grade a sample.</dd>
+<dt>D16, driver: rule (d) closes E at the earliest continuer, like rules (b) and (e), in every ingest order.</dt>
+<dd>Added to the log after checkpoint A, when a review found that different ingest orders gave different closes.</dd>
+<dt>The e2e suite now proves the statement path through real pi.</dt>
+<dd>27 of 27 turns over 3 runs, with the record turn calling <code>ledger_record</code> and the follow-up question answered from the conversation fact, and the fallback run answering 9 of 9.</dd>
+</dl>
+</section>
+
+<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8), the video session (section 9) and the ledger issues chain (section 10). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
 </body>
 </html>

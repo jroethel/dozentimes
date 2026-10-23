@@ -1,0 +1,11 @@
+{
+  "note": "Sent after the ablation questions, in the same conversation. record: the turn must call ledger_record with holds false and a new_text on the fact whose text contains record_tag, and the ledger must show that fact closed_by user. must_from_record: the turn's must fact is the conversation fact that s1 recorded. harmful and gold work as in questions.json and gold.json. s2 says today because q7 leaves an as-of of Sep 30 that a question with no time word inherits.",
+  "turns": [
+    { "id": "s1", "q": "Correction: gamma no longer keeps attachments in S3. We moved them into the gamma Postgres database.",
+      "record_tag": "attachments in S3" },
+    { "id": "s2", "q": "What did we decide about the gamma attachments today?",
+      "must_from_record": "s1",
+      "harmful": ["attachments in S3"],
+      "gold": { "asof_mode": "current", "anchor": null, "basis": null } }
+  ]
+}

@@ -94,3 +94,15 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - This branch now differs from main only by the ledger plan commits, so the chain drives it: the ownership gate passes with 2 changed files.
 - The plan's "no merge to main" line predates this, and the chain's merge card is now the normal review step, decided by Jeremy when it comes up.
 - Next: Jeremy runs `pi-time` once for the first real ledger build on main, and the chain runs the ledger plan from Task 1.
+
+## 2026-10-22 ledger issues chain lands (#3 to #7, #12)
+- All eight tasks of docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md are done on the integration branch, one commit per task, gated through docs/reviews/2026-10-22.I3.ledger-issues-batch-review.md.
+- Landed: `facts.closed_by` and `checks.kind` (T1), rule (d) scoped to one unit of work (T2, #12), rule (e) for status-family bullets (T3, #7), reworded-line matching (T4, #6), the `ledger_record` tool for what the person says (T5, #3), shelf lives fitted from checks at 30 distinct facts (T6, #4), Jev reclassification in `maintain` (T7, #5), and the e2e statement turns with this doc pass (T8).
+- Replay numbers at the gates: superseded-while-present fell 3657 to 558 and rule (d) over-reach (different file and slug) fell 1160 to 94 at T2, recall_git rose 0.9971 to 0.9979, precision stayed 1, and the T2 repair and T3 pairs moved nothing.
+- Rule (e) is inert on today's real corpus: 0 status-family bullets in the 313 current handoff, HANDOFF and whats_next files scanned at the T3 gate.
+- `npm test` at the tip: tests 92, pass 85, fail 0, todo 7, from tests 63, pass 52, fail 0, todo 11 before Task 1.
+- E2E with the new statement turns: 27 of 27 turns over 3 runs, with s1 and s2 passing 3 of 3 each, and the fallback run answering 9 of 9 turns.
+- The probe is unchanged from the pre-plan baseline at 17 of 21 combined, as expected, because no task touches `freshtime-intf/`.
+- Open: checkpoint D, where Jeremy runs `./pi-time/pi-time` on his real docs, tells it one fact changed, asks about it, then says the old fact still holds.
+- The driver also files the D6 follow-up at checkpoint D: a later doc edit should be able to close a conversation fact.
+- #3 stays open until checkpoint D; #4, #5, #6, #7 and #12 are closed.
