@@ -11,7 +11,7 @@ import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { jevEnabled, openDb, recentTraces, today } from "../../../../freshtime-core/index.ts";
 import type { Session, TemporalIntent } from "../../../../freshtime-core/index.ts";
 import { describeIntent, parseIntent } from "../../../../freshtime-intf/intent.ts";
-import { discoverSources, ingestPaths, maintain, readFacts, summary, verifyFact } from "../../../../freshtime-agnt/ledger.ts";
+import { discoverSources, ingestPaths, maintain, readFacts, recordStatement, summary, verifyFact } from "../../../../freshtime-agnt/ledger.ts";
 
 const REPO = process.env.FRESHTIME_REPO ?? join(import.meta.dirname, "..", "..", "..", "..");
 const ISSUE_REPO = "jroethel/freshtime";
@@ -114,8 +114,11 @@ async function parse(question: string): Promise<TemporalIntent> {
 const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
 
 function renderFacts(intent: TemporalIntent | null, res: ReturnType<typeof readFacts>): string {
-  const lines = res.facts.map((f) =>
-    `[${f.status}] ${f.project} - ${f.text} (valid ${f.valid_at}, verified ${f.last_verified_at} by ${f.verified_by}, source ${home(f.source_path)})`);
+  const lines = res.facts.map((f) => {
+    // a conversation fact's source is the person, not a file
+    const source = f.source_path.startsWith("conversation:") ? `source: you, ${f.valid_at}` : `source ${home(f.source_path)}`;
+    return `[${f.status}] #${f.id} ${f.project} - ${f.text} (valid ${f.valid_at}, verified ${f.last_verified_at} by ${f.verified_by}, ${source})`;
+  });
   const head = intent ? `Reading: ${describeIntent(intent)}` : "Reading: explicit override";
   return [head, ...(lines.length ? lines : ["no matching facts"]), `checks: ${res.checks}, caught: ${res.caught}`].join("\n");
 }
@@ -185,6 +188,34 @@ const verifyTool = defineTool({
   },
 });
 
+const recordTool = defineTool({
+  name: "ledger_record",
+  label: "Ledger record",
+  description: "Record what the person just said about one ledger fact: holds true when they say it still holds (this also undoes a close made by mistake), holds false when they say it changed. Pass new_text when they gave the new value; it becomes a fact sourced to the person. Returns the fact before and after.",
+  parameters: Type.Object({
+    fact_id: Type.Number({ description: "the #id shown with the fact" }),
+    holds: Type.Boolean({ description: "true when the fact still holds, false when it changed" }),
+    new_text: Type.Optional(Type.String({ description: "the new value the person gave, when holds is false" })),
+  }),
+  async execute(_id, params) {
+    const d = need();
+    const now = today();
+    const state = (id: number): { text: string; status: string } => {
+      const r = d.prepare("SELECT text, invalid_at, last_verified_at, verified_by FROM facts WHERE id = ?").get(id) as
+        { text: string; invalid_at: string | null; last_verified_at: string; verified_by: string };
+      return { text: r.text, status: r.invalid_at ? "replaced" : `current (verified ${r.last_verified_at} by ${r.verified_by})` };
+    };
+    const before = state(params.fact_id);
+    const r = recordStatement(d, params.fact_id, params.holds ? { holds: true } : { holds: false, text: params.new_text }, now);
+    const after = state(params.fact_id);
+    const neu = r.replaced_by !== null ? state(r.replaced_by) : null;
+    traceLine({ event: "record", fact_id: params.fact_id, holds: params.holds, new_text: params.new_text ?? null, replaced_by: r.replaced_by });
+    const msg = [`#${params.fact_id} ${before.text}: before ${before.status}; after ${after.status}`];
+    if (neu) msg.push(`replaced by #${r.replaced_by} ${neu.text} (${neu.status})`);
+    return { ...text(msg.join("\n")), details: { fact_id: params.fact_id, text: before.text, before: before.status, after: after.status, replaced_by: r.replaced_by, new_fact: neu } };
+  },
+});
+
 const guidance = (intent: TemporalIntent): string => [
   "",
   "## Freshtime reading for this turn",
@@ -193,6 +224,7 @@ const guidance = (intent: TemporalIntent): string => [
   "For questions about the user's projects, plans, status or decisions, call freshtime_ask and report each fact with its status.",
   "Say the reading back in one short line (\"Answering as of ...\").",
   "Never present a replaced or needs_check fact as current. For needs_check facts say they could not be confirmed.",
+  "When the person says a ledger fact still holds or has changed, call ledger_record with its #id; pass new_text when they gave the new value. If they say you changed the wrong fact, call ledger_record on it with holds true.",
 ].join("\n");
 
 async function command(args: string, ctx: Ctx): Promise<void> {
@@ -230,6 +262,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool(intentTool);
   pi.registerTool(queryTool);
   pi.registerTool(verifyTool);
+  pi.registerTool(recordTool);
   pi.registerCommand("freshtime", {
     description: "Ledger summary. Subcommands: ingest, maintain [n], asof <date>|clear, trace [n]",
     handler: async (args, ctx) => {

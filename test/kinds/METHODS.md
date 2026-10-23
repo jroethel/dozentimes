@@ -53,7 +53,7 @@ A pass proves file order breaks a same-day tie inside one file, and a handoff's 
 Method: read ledger fields at ingest, append an edit behind the ledger, and read with verify on.
 Data: `data/verification/history.json`.
 A pass proves ingest stamps the author date with `verified_by` author, a source re-read stamps `source`, and a changed source is caught.
-Todo: #3, a user statement that a fact holds cannot be recorded, so `verified_by` user never occurs.
+It also proves a person's statement is recorded: holds verifies with `verified_by` user, a new value becomes a conversation fact that survives re-ingest, a user close survives re-ingest, and saying a user-closed fact still holds undoes the close.
 
 ## access
 

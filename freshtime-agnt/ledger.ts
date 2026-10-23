@@ -38,6 +38,8 @@ export function jaccard(a: Set<string>, b: Set<string>): number {
 // Negation words a rewording must keep; words ending in "n't" are matched on the raw text.
 const NEGATIONS = new Set(["not", "no", "never", "none", "cannot", "without"]);
 const isHandoff = (p: string): boolean => /\/docs\/handoffs\/[^/]+\.md$/.test(p) || basename(p) === "HANDOFF.md";
+// A conversation fact came from the person, not a file: its source_path is "conversation:<project>".
+const isConversation = (p: string): boolean => p.startsWith("conversation:");
 // The unit of work a handoff is about: "2026-10-01.i4-t1-parser.resume.md" -> "i4-t1-parser".
 export const handoffSlug = (p: string): string =>
   basename(p, ".md").replace(/\.resume$/, "").replace(/^\d{4}-\d{2}-\d{2}[.\-_ ]?/, "");
@@ -190,7 +192,8 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     seen.add(f.section + "\u0000" + f.text);
     const prior = get.get(path, f.section, f.text) as FactRow | undefined;
     if (prior) {
-      if (prior.invalid_at && (prior.replaced_by === null || prior.closed_by === "reworded")) reopen.run(prior.id);
+      // a user close survives re-ingest while the file line is unchanged
+      if (prior.invalid_at && prior.closed_by !== "user" && (prior.replaced_by === null || prior.closed_by === "reworded")) reopen.run(prior.id);
       continue;
     }
     const c = kinds.get(f.text) ?? { kind: keywordKind(f.text), path: "keyword" as const };
@@ -400,7 +403,8 @@ export function readFacts(
       if (past && (mode !== "mixed" || wasValid(r))) status = "current_then";
       else {
         status = currentStatus(r, opts.now, opts.ledger);
-        if (status === "needs_check" && verify) {
+        // a conversation fact has no source to re-read, so it stays needs_check without counting a check
+        if (status === "needs_check" && verify && !isConversation(r.source_path)) {
           checks++;
           if (verifyFact(db, r.id, opts.now)) caught++;
           r = db.prepare("SELECT * FROM facts WHERE id = ?").get(r.id) as FactRow;
@@ -433,6 +437,7 @@ export function readFacts(
 export function verifyFact(db: DatabaseSync, id: number, now: string): boolean {
   const f = db.prepare("SELECT * FROM facts WHERE id = ?").get(id) as FactRow | undefined;
   if (!f) throw new Error(`no fact ${id}`);
+  if (isConversation(f.source_path)) throw new Error(`fact ${id} came from conversation and has no source to re-read`);
   const content = existsSync(f.source_path) ? readFileSync(f.source_path, "utf8") : null;
   const known = db.prepare("SELECT hash FROM sources WHERE path = ?").get(f.source_path) as FactRow | undefined;
   if (known?.hash !== hashOf(content)) ingestCore(db, f.source_path, now, new Map());
@@ -454,9 +459,49 @@ export function verifyFact(db: DatabaseSync, id: number, now: string): boolean {
   return !ok;
 }
 
+export type Statement = { holds: true } | { holds: false; text?: string };
+
+// What the person just said about one fact. "Still holds" verifies it, and undoes a close they made earlier;
+// "changed" invalidates it, optionally replacing it with a conversation fact that carries the new value.
+export function recordStatement(db: DatabaseSync, id: number, s: Statement, now: string): { id: number; replaced_by: number | null } {
+  const f = db.prepare("SELECT * FROM facts WHERE id = ?").get(id) as FactRow | undefined;
+  if (!f) throw new Error(`no fact ${id}`);
+  if (f.invalid_at !== null && !(s.holds && f.closed_by === "user")) throw new Error(`fact ${id} is not live`);
+  const check = db.prepare("INSERT INTO checks (fact_id, ts, age_days, changed, reason, kind) VALUES (?, ?, ?, ?, ?, ?)");
+  const stamp = db.prepare("UPDATE facts SET last_verified_at = ?, verified_by = 'user' WHERE id = ?");
+  if (s.holds) {
+    // undo: reopen the row, and close the conversation fact it had been replaced by, if any
+    if (f.invalid_at !== null) {
+      db.prepare("UPDATE facts SET invalid_at = NULL, replaced_by = NULL, closed_by = NULL WHERE id = ?").run(id);
+      if (f.replaced_by !== null) db.prepare("UPDATE facts SET invalid_at = ?, closed_by = 'user' WHERE id = ?").run(now, f.replaced_by);
+    }
+    check.run(id, now, daysBetween(f.last_verified_at, now), 0, "user: holds", f.kind);
+    stamp.run(now, id);
+    return { id, replaced_by: null };
+  }
+  // changed. With a new value, that value becomes a fact the person is the source of, reused and reopened if it exists.
+  let newId: number | null = null;
+  if (s.text) {
+    const src = "conversation:" + f.project;
+    const prior = db.prepare("SELECT id, invalid_at FROM facts WHERE source_path = ? AND section = ? AND text = ?").get(src, f.section, s.text) as FactRow | undefined;
+    if (prior) {
+      newId = prior.id as number;
+      if (prior.invalid_at !== null)
+        db.prepare("UPDATE facts SET invalid_at = NULL, replaced_by = NULL, closed_by = NULL WHERE id = ?").run(newId);
+    } else {
+      const r = db.prepare(`INSERT INTO facts (project, section, text, source_path, kind, kind_path, valid_at, recorded_at, source_at, last_verified_at, verified_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user')`).run(f.project, f.section, s.text, src, f.kind, f.kind_path, now, now, now, now);
+      newId = Number(r.lastInsertRowid);
+    }
+  }
+  check.run(id, now, daysBetween(f.last_verified_at, now), 1, "user: changed", f.kind);
+  db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ?, closed_by = 'user' WHERE id = ?").run(now, newId, id);
+  return { id, replaced_by: newId };
+}
+
 export function maintain(db: DatabaseSync, now: string, budget: number): { checked: number; changed: number } {
-  const rows = (db.prepare("SELECT id, kind, last_verified_at FROM facts WHERE invalid_at IS NULL ORDER BY last_accessed_at IS NULL, last_accessed_at DESC, last_verified_at ASC").all() as FactRow[])
-    .filter((r) => needsCheck(r.kind, r.last_verified_at, now));
+  const rows = (db.prepare("SELECT id, kind, source_path, last_verified_at FROM facts WHERE invalid_at IS NULL ORDER BY last_accessed_at IS NULL, last_accessed_at DESC, last_verified_at ASC").all() as FactRow[])
+    .filter((r) => needsCheck(r.kind, r.last_verified_at, now) && !isConversation(r.source_path));
   let checked = 0, changed = 0;
   for (const r of rows) {
     if (checked >= budget) break;
