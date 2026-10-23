@@ -106,3 +106,12 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Open: checkpoint D, where Jeremy runs `./pi-time/pi-time` on his real docs, tells it one fact changed, asks about it, then says the old fact still holds.
 - The driver also files the D6 follow-up at checkpoint D: a later doc edit should be able to close a conversation fact.
 - #3 stays open until checkpoint D; #4, #5, #6, #7 and #12 are closed.
+
+## 2026-10-23 ledger chain merged
+- Checkpoint D passed and #3 is closed, so #3 to #7 and #12 are all closed.
+- main was fast-forwarded to cez/828d1c94 (782de22) and pushed.
+- `npm test` on main: tests 92, pass 85, fail 0, todo 7.
+- The real ledger exists at `~/.freshtime/ledger.db`, so the first build is done.
+- The cezar worktrees and the `cez/*` and `jrit/chain-I3` branches were removed after the merge.
+- Note: Node lists todo tests whose assertions fail under "failing tests" in the `npm test` summary, though fail is 0.
+- Next: #14 (`agent:todo`), a later doc edit closes the conversation fact it contradicts. #1 waits on Jeremy's blind questions.

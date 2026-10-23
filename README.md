@@ -39,6 +39,7 @@ Inside pi-time:
 - Every prompt gets a time reading, such as "answering as of 2026-10-14 (inherited from earlier)", shown in the status line.
 - `freshtime_ask` runs the pair: intent first, then the ledger reads at that time and re-checks stale facts against their source files.
 - `temporal_intent`, `ledger_query` and `ledger_verify` run each side alone.
+- `ledger_record` records what you say about a fact: that it still holds, or that it changed, with the new value when you give one.
 - `/freshtime` shows ledger counts, the last traces and remaining work. `/freshtime ingest`, `/freshtime maintain 10`, `/freshtime asof 2026-10-14`, `/freshtime asof clear` and `/freshtime trace 20` do what they say.
 
 Outside pi:
