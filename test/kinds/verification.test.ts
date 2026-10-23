@@ -42,10 +42,55 @@ test("a source re-read stamps verified_by source", async () => {
   assert.equal(fact(db, "[ ] ship the orchard%").verified_by, "source");
 });
 
-test("a user statement that a fact still holds verifies it, verified_by user", { todo: "#3" }, async () => {
+test("a user statement that a fact still holds verifies it, verified_by user", async () => {
   const { db } = await setup();
-  const record = (ledger as any).recordStatement;
-  assert.equal(typeof record, "function", "no way to record a statement made in conversation");
-  record(db, fact(db, "[ ] ship the orchard%").id, "still holds", "2026-10-20");
-  assert.equal(fact(db, "[ ] ship the orchard%").verified_by, "user");
+  const id = fact(db, "[ ] ship the orchard%").id;
+  assert.deepEqual(ledger.recordStatement(db, id, { holds: true }, "2026-10-20"), { id, replaced_by: null });
+  const f = fact(db, "[ ] ship the orchard%");
+  assert.deepEqual([f.verified_by, f.last_verified_at], ["user", "2026-10-20"]);
+  const c = db.prepare("SELECT age_days, changed, reason FROM checks WHERE fact_id = ?").get(id) as Record<string, any>;
+  assert.deepEqual({ ...c }, { age_days: 19, changed: 0, reason: "user: holds" });
+});
+
+test("a user statement with a new value replaces the fact with a conversation fact that survives re-ingest", async () => {
+  const { repo, db } = await setup();
+  const old = fact(db, "Decided orchard cache lives in sqlite");
+  const r = ledger.recordStatement(db, old.id, { holds: false, text: "Decided orchard cache lives in redis" }, "2026-10-20");
+  const neu = fact(db, "Decided orchard cache lives in redis");
+  assert.equal(r.replaced_by, neu.id);
+  assert.deepEqual([neu.source_path, neu.verified_by, neu.valid_at, neu.kind], ["conversation:orchard", "user", "2026-10-20", old.kind]);
+  await ingestDir(db, repo, "2026-10-21");
+  assert.equal(fact(db, "Decided orchard cache lives in sqlite").invalid_at, "2026-10-20");
+  assert.equal(fact(db, "Decided orchard cache lives in redis").invalid_at, null);
+});
+
+test("a user statement that a fact changed, with no new value, survives re-ingest", async () => {
+  const { repo, db } = await setup();
+  const id = fact(db, "Decided orchard cache lives in sqlite").id;
+  assert.deepEqual(ledger.recordStatement(db, id, { holds: false }, "2026-10-20"), { id, replaced_by: null });
+  await ingestDir(db, repo, "2026-10-21");
+  const f = fact(db, "Decided orchard cache lives in sqlite");
+  assert.deepEqual([f.invalid_at, f.closed_by], ["2026-10-20", "user"]);
+});
+
+test("a stale conversation fact is never sent to a source re-read", async () => {
+  const { db } = await setup();
+  const old = fact(db, "Decided orchard cache lives in sqlite");
+  ledger.recordStatement(db, old.id, { holds: false, text: "Decided orchard cache lives in redis" }, "2026-10-02");
+  const r = readFacts(db, null, { now: "2027-02-01", ledger: true, verify: true, query: "redis" });
+  assert.equal(r.checks, 0);
+  const f = r.facts.find((x) => x.text.includes("redis"));
+  assert.equal(f?.status, "needs_check");
+  assert.throws(() => ledger.verifyFact(db, f!.id, "2027-02-01"), /conversation/);
+});
+
+test("saying a user-closed fact still holds undoes the close", async () => {
+  const { db } = await setup();
+  const old = fact(db, "Decided orchard cache lives in sqlite");
+  ledger.recordStatement(db, old.id, { holds: false, text: "Decided orchard cache lives in redis" }, "2026-10-20");
+  assert.deepEqual(ledger.recordStatement(db, old.id, { holds: true }, "2026-10-21"), { id: old.id, replaced_by: null });
+  const f = fact(db, "Decided orchard cache lives in sqlite");
+  assert.deepEqual([f.invalid_at, f.closed_by, f.replaced_by, f.verified_by], [null, null, null, "user"]);
+  const neu = fact(db, "Decided orchard cache lives in redis");
+  assert.deepEqual([neu.invalid_at, neu.closed_by], ["2026-10-21", "user"]);
 });
