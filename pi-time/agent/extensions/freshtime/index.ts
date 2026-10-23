@@ -247,6 +247,8 @@ async function command(args: string, ctx: Ctx): Promise<void> {
     msg = [
       `facts ${s.total}: ${Object.entries(s.byStatus).map(([k, n]) => `${n} ${k}`).join(", ")} | Jev failures ${s.fallbacks}`,
       `kinds: ${Object.entries(s.byKind).map(([k, n]) => `${n} ${k}`).join(", ")}`,
+      ...Object.entries(s.lives).map(([k, l]) =>
+        `shelf life ${k}: ${l.days === null ? "never goes stale" : `${l.days} days`} (${l.fitted ? "fitted" : "hand-set"}, checks ${l.n}, facts ${l.facts}, user ${l.user})`),
       `session as-of: ${session.ambient ? session.ambient.text : "none"}`,
       "top projects:", ...s.byProject.map(([p, n]) => `  ${n}  ${p}`),
       "last 10 traces:", traces(10),

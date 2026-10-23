@@ -65,9 +65,10 @@ Nothing is todo.
 ## volatility
 
 Method: read the same ledger at several clocks and compare statuses by class, with identity set directly because offline ingest never assigns it.
-Data: `data/volatility/history.json`.
-A pass proves status goes `needs_check` after 7 days, decision after 90, and identity never.
-Todo: #4, shelf lives are not fitted from the checks table, so 30 early-change checks do not shorten the status shelf life.
+Data: `data/volatility/history.json`, plus checks rows inserted straight into the ledger for the fit.
+A pass proves status goes `needs_check` after 7 days, decision after 90, and identity never, while the shelf lives stay hand-set.
+It also proves the fit: with 30 distinct checked facts the status life comes from their checks, below 30 the hand-set value stands, user statements are reported but never fitted, and a rarely changing class is fitted longer than its hand-set value.
+Nothing is todo.
 
 ## intended
 

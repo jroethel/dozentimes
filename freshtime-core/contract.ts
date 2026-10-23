@@ -50,7 +50,8 @@ export interface LedgerFact {
 }
 
 // Shelf life per volatility class, from research/temporal-memory/scorer.py half-lives.
-// ponytail: hand-set. Fit per class from verification outcomes once enough checks exist.
+// These are the fallback while a class has fewer than 30 distinct facts checked; from 30 on,
+// shelfLives in freshtime-agnt/ledger.ts fits each class's shelf life from the checks table.
 export const SHELF_LIFE_DAYS: Record<Volatility, number | null> = {
   status: 7, decision: 90, preference: 365, identity: null,
 };

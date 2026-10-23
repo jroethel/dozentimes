@@ -353,8 +353,39 @@ export function discoverSources(roots: string[]): string[] {
 
 // ---------- read ----------
 
-const needsCheck = (kind: Volatility, lastVerified: string, now: string): boolean => {
-  const life = SHELF_LIFE_DAYS[kind];
+export interface ShelfLife { days: number | null; n: number; facts: number; user: number; fitted: boolean }
+export const MIN_FACTS = 30;
+export const P_STALE = 0.25; // Jeremy's value from checkpoint C
+
+// A fact survives age a unchanged with probability e^(-lambda*age). With at least MIN_FACTS distinct facts
+// checked under a class, lambda is the maximum-likelihood fit over that class's source checks (reason not
+// "user:") and days is the age at which the stale risk reaches P_STALE, clamped to 1..365 days. Below that the
+// hand-set SHELF_LIFE_DAYS stand. User rows are counted and reported but never fitted, because the person mostly
+// speaks up when something changed, which would bias the fit.
+export function shelfLives(db: DatabaseSync): Record<Volatility, ShelfLife> {
+  const rows = db.prepare("SELECT kind, fact_id, age_days, changed FROM checks WHERE age_days >= 1 AND reason NOT LIKE 'user:%'").all() as FactRow[];
+  const users = new Map((db.prepare("SELECT kind, COUNT(*) AS n FROM checks WHERE reason LIKE 'user:%' GROUP BY kind").all() as FactRow[]).map((r) => [r.kind, r.n]));
+  const out = {} as Record<Volatility, ShelfLife>;
+  for (const kind of Object.keys(SHELF_LIFE_DAYS) as Volatility[]) {
+    const obs = rows.filter((r) => r.kind === kind);
+    const n = obs.length, facts = new Set(obs.map((r) => r.fact_id)).size, user = users.get(kind) ?? 0;
+    if (facts < MIN_FACTS) { out[kind] = { days: SHELF_LIFE_DAYS[kind], n, facts, user, fitted: false }; continue; }
+    const L = (lam: number): number => obs.reduce((s, r) => s + (r.changed ? Math.log(-Math.expm1(-lam * r.age_days)) : -lam * r.age_days), 0);
+    // golden-section search on log(lambda) over [1e-4, 10]; the final interval is 1% wide or less in lambda
+    let lo = Math.log(1e-4), hi = Math.log(10), r = (Math.sqrt(5) - 1) / 2;
+    let a = hi - r * (hi - lo), b = lo + r * (hi - lo), fa = L(Math.exp(a)), fb = L(Math.exp(b));
+    while (hi - lo > Math.log(1.01)) {
+      if (fa < fb) { lo = a; a = b; fa = fb; b = lo + r * (hi - lo); fb = L(Math.exp(b)); }
+      else { hi = b; b = a; fb = fa; a = hi - r * (hi - lo); fa = L(Math.exp(a)); }
+    }
+    const lam = Math.exp((lo + hi) / 2);
+    out[kind] = { days: Math.min(365, Math.max(1, Math.floor(-Math.log1p(-P_STALE) / lam))), n, facts, user, fitted: true };
+  }
+  return out;
+}
+
+const needsCheck = (kind: Volatility, lastVerified: string, now: string, lives: Record<Volatility, ShelfLife>): boolean => {
+  const life = lives[kind].days;
   return life !== null && daysBetween(lastVerified, now) > life;
 };
 
@@ -364,8 +395,8 @@ const toFact = (r: FactRow, status: FactStatus): LedgerFact => ({
   last_verified_at: r.last_verified_at, verified_by: r.verified_by, last_accessed_at: r.last_accessed_at, status,
 });
 
-const currentStatus = (r: FactRow, now: string, ledger: boolean): FactStatus =>
-  r.invalid_at ? "replaced" : ledger && needsCheck(r.kind, r.last_verified_at, now) ? "needs_check" : "current";
+const currentStatus = (r: FactRow, now: string, ledger: boolean, lives: Record<Volatility, ShelfLife>): FactStatus =>
+  r.invalid_at ? "replaced" : ledger && needsCheck(r.kind, r.last_verified_at, now, lives) ? "needs_check" : "current";
 
 export function ftsQuery(q: string): string {
   const toks = [...new Set((q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((t) => t.length > 1))];
@@ -378,6 +409,7 @@ export function readFacts(
   opts: { now: string; ledger: boolean; verify: boolean; limit?: number; query?: string },
 ): { facts: LedgerFact[]; checks: number; caught: number } {
   const t0 = performance.now();
+  const lives = shelfLives(db);
   const mode = intent?.asof_mode ?? "current";
   const anchor = intent?.anchor ?? null;
   const q = ftsQuery(intent?.query ?? opts.query ?? "");
@@ -402,13 +434,13 @@ export function readFacts(
       let status: FactStatus;
       if (past && (mode !== "mixed" || wasValid(r))) status = "current_then";
       else {
-        status = currentStatus(r, opts.now, opts.ledger);
+        status = currentStatus(r, opts.now, opts.ledger, lives);
         // a conversation fact has no source to re-read, so it stays needs_check without counting a check
         if (status === "needs_check" && verify && !isConversation(r.source_path)) {
           checks++;
           if (verifyFact(db, r.id, opts.now)) caught++;
           r = db.prepare("SELECT * FROM facts WHERE id = ?").get(r.id) as FactRow;
-          status = currentStatus(r, opts.now, opts.ledger);
+          status = currentStatus(r, opts.now, opts.ledger, lives);
         }
       }
       out.push(toFact(r, status));
@@ -500,8 +532,9 @@ export function recordStatement(db: DatabaseSync, id: number, s: Statement, now:
 }
 
 export function maintain(db: DatabaseSync, now: string, budget: number): { checked: number; changed: number } {
+  const lives = shelfLives(db);
   const rows = (db.prepare("SELECT id, kind, source_path, last_verified_at FROM facts WHERE invalid_at IS NULL ORDER BY last_accessed_at IS NULL, last_accessed_at DESC, last_verified_at ASC").all() as FactRow[])
-    .filter((r) => needsCheck(r.kind, r.last_verified_at, now) && !isConversation(r.source_path));
+    .filter((r) => needsCheck(r.kind, r.last_verified_at, now, lives) && !isConversation(r.source_path));
   let checked = 0, changed = 0;
   for (const r of rows) {
     if (checked >= budget) break;
@@ -516,12 +549,13 @@ export function maintain(db: DatabaseSync, now: string, budget: number): { check
 }
 
 export function summary(db: DatabaseSync, now: string) {
+  const lives = shelfLives(db);
   const rows = db.prepare("SELECT project, kind, invalid_at, last_verified_at FROM facts").all() as FactRow[];
   const byStatus: Record<string, number> = { current: 0, needs_check: 0, replaced: 0 };
   const byKind: Record<string, number> = {};
   const proj: Record<string, number> = {};
   for (const r of rows) {
-    byStatus[currentStatus(r, now, true)]++;
+    byStatus[currentStatus(r, now, true, lives)]++;
     byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
     proj[r.project] = (proj[r.project] ?? 0) + 1;
   }
@@ -529,5 +563,5 @@ export function summary(db: DatabaseSync, now: string) {
   const fallbacks = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE path = 'fallback' AND error IS NOT NULL").get() as FactRow).n as number;
   const kindPaths = db.prepare("SELECT kind_path, COUNT(*) AS n FROM facts GROUP BY kind_path").all() as FactRow[];
   const lastIngest = (db.prepare("SELECT MAX(ts) AS ts FROM traces WHERE tool = 'agnt.ingest'").get() as FactRow).ts as string | null;
-  return { total: rows.length, byStatus, byKind, byProject, fallbacks, kindPaths: Object.fromEntries(kindPaths.map((r) => [r.kind_path, r.n])), lastIngest };
+  return { total: rows.length, byStatus, byKind, byProject, fallbacks, kindPaths: Object.fromEntries(kindPaths.map((r) => [r.kind_path, r.n])), lastIngest, lives };
 }

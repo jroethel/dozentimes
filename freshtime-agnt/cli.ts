@@ -19,6 +19,8 @@ if (cmd === "ingest") {
   console.log("status", JSON.stringify(s.byStatus));
   console.log("kind", JSON.stringify(s.byKind));
   console.log("kind source", JSON.stringify(s.kindPaths));
+  for (const [kind, l] of Object.entries(s.lives))
+    console.log(`shelf life ${kind}: ${l.days === null ? "never goes stale" : `${l.days} days`} (${l.fitted ? "fitted" : "hand-set"}, checks ${l.n}, facts ${l.facts}, user ${l.user})`);
   for (const [p, n] of s.byProject) console.log(`  ${String(n).padStart(5)}  ${p}`);
 } else if (cmd === "query") {
   const r = readFacts(db, null, { now, ledger: true, verify: false, query: args.join(" ") });
