@@ -138,6 +138,9 @@ const KIND_CRITERIA: Record<Volatility, string> = {
 };
 const CHUNK = 40;
 
+// A classifier maps fact texts to volatility kinds: the default asks Jev in chunks, with keyword and fallback paths.
+export type Classifier = (texts: string[], db?: DatabaseSync) => Promise<Classified[]>;
+
 export async function classify(texts: string[], db?: DatabaseSync): Promise<Classified[]> {
   if (!jevEnabled()) return texts.map((t) => ({ kind: keywordKind(t), path: "keyword" }));
   const res: Classified[] = [];
@@ -531,7 +534,29 @@ export function recordStatement(db: DatabaseSync, id: number, s: Statement, now:
   return { id, replaced_by: newId };
 }
 
-export function maintain(db: DatabaseSync, now: string, budget: number): { checked: number; changed: number } {
+// Keyword-classified rows are upgraded with Jev here, at most 40 per call (one Jev chunk), never at startup.
+// Only a Jev answer upgrades a row; keyword and fallback answers leave it for a later maintain.
+export async function reclassify(db: DatabaseSync, classifier: Classifier = classify, limit = 40): Promise<{ updated: number; changed: number }> {
+  const t0 = performance.now();
+  const rows = db.prepare("SELECT id, text, kind FROM facts WHERE invalid_at IS NULL AND kind_path IN ('keyword', 'fallback') ORDER BY id ASC LIMIT ?")
+    .all(limit) as FactRow[];
+  const answers = await classifier(rows.map((r) => r.text), db);
+  let updated = 0, changed = 0;
+  const set = db.prepare("UPDATE facts SET kind = ?, kind_path = 'jev' WHERE id = ?");
+  rows.forEach((r, i) => {
+    const a = answers[i];
+    if (!a || a.path !== "jev") return;
+    set.run(a.kind, r.id);
+    updated++;
+    if (a.kind !== r.kind) changed++;
+  });
+  trace(db, { tool: "agnt.reclassify", input: { limit, candidates: rows.length }, output: { updated, changed }, ms: Math.round(performance.now() - t0) });
+  return { updated, changed };
+}
+
+export async function maintain(db: DatabaseSync, now: string, budget: number, classifier: Classifier = classify): Promise<{ checked: number; changed: number; reclassified: number }> {
+  // reclassify first, so the check loop's shelf lives apply to the new kinds
+  const { updated } = await reclassify(db, classifier);
   const lives = shelfLives(db);
   const rows = (db.prepare("SELECT id, kind, source_path, last_verified_at FROM facts WHERE invalid_at IS NULL ORDER BY last_accessed_at IS NULL, last_accessed_at DESC, last_verified_at ASC").all() as FactRow[])
     .filter((r) => needsCheck(r.kind, r.last_verified_at, now, lives) && !isConversation(r.source_path));
@@ -545,7 +570,7 @@ export function maintain(db: DatabaseSync, now: string, budget: number): { check
     if (verifyFact(db, r.id, now)) changed++;
   }
   trace(db, { tool: "agnt.maintain", input: { budget }, output: { checked, changed } });
-  return { checked, changed };
+  return { checked, changed, reclassified: updated };
 }
 
 export function summary(db: DatabaseSync, now: string) {

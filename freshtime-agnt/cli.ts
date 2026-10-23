@@ -26,7 +26,7 @@ if (cmd === "ingest") {
   const r = readFacts(db, null, { now, ledger: true, verify: false, query: args.join(" ") });
   for (const f of r.facts) console.log(`[${f.status}] (${f.kind}, ${f.valid_at}) ${f.project}: ${f.text.slice(0, 160)}`);
 } else if (cmd === "maintain") {
-  console.log(JSON.stringify(maintain(db, now, Number(args[0] ?? 20))));
+  console.log(JSON.stringify(await maintain(db, now, Number(args[0] ?? 20))));
 } else if (cmd === "trace") {
   for (const t of recentTraces(db, Number(args[0] ?? 10))) console.log(`${t.ts} ${t.tool} ${t.path ?? "-"} ${t.ms ?? "-"}ms ${t.error ?? ""} ${t.output ?? ""}`);
 } else {

@@ -236,7 +236,7 @@ async function command(args: string, ctx: Ctx): Promise<void> {
       `${String(t.ts).slice(11, 19)} ${String(t.tool).padEnd(12)} ${String(t.path ?? "-").padEnd(8)} ${String(t.ms ?? "-").padStart(4)}ms ${t.error ? `ERROR ${t.error}` : brief(t.output)}`.slice(0, 90)).join("\n");
   let msg: string;
   if (sub === "ingest") msg = await ingest();
-  else if (sub === "maintain") { const r = maintain(d, now, Number(arg ?? 10) || 10); msg = `maintain: checked ${r.checked}, changed ${r.changed}`; }
+  else if (sub === "maintain") { const r = await maintain(d, now, Number(arg ?? 10) || 10); msg = `maintain: checked ${r.checked}, changed ${r.changed}, reclassified ${r.reclassified}`; }
   else if (sub === "asof") {
     if (arg === "clear") { session = { ...session, ambient: null }; msg = "session as-of cleared"; }
     else if (/^\d{4}-\d{2}-\d{2}$/.test(arg ?? "")) { session = { ...session, ambient: { start: arg, end: arg, text: arg } }; msg = `session as-of set to ${arg}`; }
