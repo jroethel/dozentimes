@@ -10,14 +10,14 @@
       "date": "2026-10-09",
       "message": "first handoff of the day",
       "files": {
-        "lantern/docs/handoffs/2026-10-09-b.md": "## State\n- Lantern build is green on main\n"
+        "lantern/docs/handoffs/2026-10-09.lantern-build.md": "## State\n- Lantern build is green on main\n"
       }
     },
     {
       "date": "2026-10-09",
-      "message": "second handoff of the day",
+      "message": "second handoff of the day, resuming the first",
       "files": {
-        "lantern/docs/handoffs/2026-10-09-a.md": "## State\n- Lantern build is red since the merge\n"
+        "lantern/docs/handoffs/2026-10-09.lantern-fix.md": "Resumes 2026-10-09.lantern-build.\n\n## State\n- Lantern build is red since the merge\n"
       }
     }
   ]

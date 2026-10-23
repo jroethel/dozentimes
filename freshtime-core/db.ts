@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS facts (
   verified_by TEXT NOT NULL,
   last_accessed_at TEXT,
   access_count INTEGER NOT NULL DEFAULT 0,
+  closed_by TEXT,
   UNIQUE (source_path, section, text)
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS facts_fts USING fts5(project, section, text, content='facts', content_rowid='id');
@@ -36,7 +37,8 @@ CREATE TABLE IF NOT EXISTS checks (
   ts TEXT NOT NULL,
   age_days INTEGER NOT NULL,
   changed INTEGER NOT NULL,
-  reason TEXT NOT NULL
+  reason TEXT NOT NULL,
+  kind TEXT
 );
 CREATE TABLE IF NOT EXISTS sources (
   path TEXT PRIMARY KEY,
@@ -60,5 +62,10 @@ export function openDb(path = defaultDbPath()): DatabaseSync {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec(SCHEMA);
+  // A ledger made before these columns existed keeps its rows and gains them.
+  for (const [table, col] of [["facts", "closed_by"], ["checks", "kind"]]) {
+    const cols = (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+    if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`);
+  }
   return db;
 }

@@ -1,9 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { openDb } from "../../freshtime-core/index.ts";
 import { fallbackIntent } from "../../freshtime-intf/intent.ts";
 import { readFacts } from "../../freshtime-agnt/ledger.ts";
-import { build, ingestDir } from "./helpers.ts";
+import { build, fact, ingestDir, tmp } from "./helpers.ts";
 
 const NOW = "2026-10-10";
 const setup = async () => {
@@ -33,7 +35,7 @@ test("a current read labels the old Next: replaced and the new one current", asy
   assert.deepEqual(st, { "Next: build the orchard importer": "replaced", "Next: wire the orchard exporter": "current" });
 });
 
-test("a newer Waiting bullet replaces the older one about the same thing", { todo: "#7" }, async () => {
+test("a newer Waiting bullet replaces the older one about the same thing", async () => {
   const db = await setup();
   const old = db.prepare("SELECT invalid_at FROM facts WHERE text LIKE 'Waiting on the orchard schema%'").get() as any;
   assert.equal(old.invalid_at, "2026-10-09");
@@ -45,4 +47,46 @@ test("one ingest of three Next: lines closes each at its successor's date", asyn
   await ingestDir(db, repo, NOW);
   const closed = (db.prepare("SELECT invalid_at FROM facts WHERE text LIKE 'Next:%' ORDER BY valid_at").all() as any[]).map((r) => r.invalid_at);
   assert.deepEqual(closed, ["2026-10-01", "2026-10-20", null]);
+});
+
+const files = async (fs: Record<string, string>) => {
+  const dir = tmp("valid"), db = openDb(":memory:");
+  for (const [rel, body] of Object.entries(fs)) {
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), body);
+  }
+  await ingestDir(db, dir, NOW);
+  return db;
+};
+
+test("two Waiting bullets in the same session both stay current", async () => {
+  const db = await files({
+    "orchard/whats_next.md": "## 2026-10-01 session\n- Waiting on the orchard schema review\n- Waiting on the vendor price sheet\n",
+  });
+  assert.equal(fact(db, "Waiting on the orchard schema review").invalid_at, null);
+  assert.equal(fact(db, "Waiting on the vendor price sheet").invalid_at, null);
+});
+
+test("a later Waiting bullet in another file of the project does not replace", async () => {
+  const db = await files({
+    "orchard/whats_next.md": "## 2026-10-01 session\n- Waiting on the orchard schema review\n",
+    "orchard/HANDOFF.md": "## 2026-10-09 session\n- Waiting on the orchard exporter review\n",
+  });
+  assert.equal(fact(db, "Waiting on the orchard schema review").invalid_at, null);
+});
+
+test("a later plain bullet does not replace an earlier one", async () => {
+  const db = await files({
+    "orchard/whats_next.md":
+      "## 2026-10-01 session\n- The orchard importer reads CSV files\n\n## 2026-10-09 session\n- The orchard exporter writes JSON files\n",
+  });
+  assert.equal(fact(db, "The orchard importer reads CSV files").invalid_at, null);
+});
+
+test("a later wait about something else does not replace an earlier wait", async () => {
+  const db = await files({
+    "orchard/whats_next.md":
+      "## 2026-10-01 session\n- Waiting on the vendor price sheet\n\n## 2026-10-09 session\n- Waiting on the DBA for credentials\n",
+  });
+  assert.equal(fact(db, "Waiting on the vendor price sheet").invalid_at, null);
 });

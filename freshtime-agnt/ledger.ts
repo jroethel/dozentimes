@@ -19,7 +19,38 @@ export interface ExtractedFact {
 const DATE_RE = /\d{4}-\d{2}-\d{2}/;
 const NEXT_RE = /^(\[[ xX]\]\s*)?[*_]*next[*_]*\s*:/i;
 const STATE_SECTION = /\b(state|status|next|open|blocked|recent|remaining|resume|current)\b/i;
+// A status-family line starts with "Waiting on/for", "Blocked on/by", or a Status:, State:, Currently: or In progress: label.
+export const STATUS_FAMILY = /^(?:\[[ xX]\]\s*)?[*_]*(?:(waiting\s+(?:on|for)|blocked\s+(?:on|by))\b|(status|state|currently|in\s+progress)[*_]*\s*:)[*_]*\s*/i;
+// The family of a line and its text after the family prefix, or null. Next: lines are never in a family.
+function familyOf(text: string): { family: string; rest: string } | null {
+  const m = NEXT_RE.test(text) ? null : text.match(STATUS_FAMILY);
+  if (!m) return null;
+  const family = m[1] ? m[1].toLowerCase().split(/\s+/)[0] : m[2].toLowerCase().replace(/\s+/g, " ");
+  return { family, rest: text.slice(m[0].length) };
+}
+export const words = (text: string): Set<string> => new Set(text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
+export function jaccard(a: Set<string>, b: Set<string>): number {
+  let both = 0;
+  for (const w of a) if (b.has(w)) both++;
+  const union = a.size + b.size - both;
+  return union ? both / union : 0;
+}
+// Negation words a rewording must keep; words ending in "n't" are matched on the raw text.
+const NEGATIONS = new Set(["not", "no", "never", "none", "cannot", "without"]);
 const isHandoff = (p: string): boolean => /\/docs\/handoffs\/[^/]+\.md$/.test(p) || basename(p) === "HANDOFF.md";
+// The unit of work a handoff is about: "2026-10-01.i4-t1-parser.resume.md" -> "i4-t1-parser".
+export const handoffSlug = (p: string): string =>
+  basename(p, ".md").replace(/\.resume$/, "").replace(/^\d{4}-\d{2}-\d{2}[.\-_ ]?/, "");
+
+// A text names a handoff when the handoff's file name (without .md, starting with a date) appears in it as a whole token.
+const NAME_CH = /[\p{L}\p{N}_-]/u;
+const datedName = (p: string): boolean => /^\d{4}-\d{2}-\d{2}/.test(basename(p));
+function namesHandoff(text: string, path: string): boolean {
+  const stem = basename(path, ".md");
+  for (let i = text.indexOf(stem); i >= 0; i = text.indexOf(stem, i + 1))
+    if (!NAME_CH.test(text[i - 1] ?? "") && !NAME_CH.test(text[i + stem.length] ?? "")) return true;
+  return false;
+}
 
 export function projectOf(path: string): string {
   const dir = dirname(path);
@@ -147,10 +178,10 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
   const content = existsSync(path) ? readFileSync(path, "utf8") : null;
   const facts = content === null ? [] : extractFacts(path, content, mtime);
   let added = 0, replaced = 0;
-  const get = db.prepare("SELECT id, invalid_at, replaced_by FROM facts WHERE source_path = ? AND section = ? AND text = ?");
-  // ponytail: a removed line that comes back is reopened, so the gap between removal and return is lost.
+  const get = db.prepare("SELECT id, invalid_at, replaced_by, closed_by FROM facts WHERE source_path = ? AND section = ? AND text = ?");
+  // ponytail: a removed or reworded line that comes back is reopened, so the gap between removal and return is lost.
   // Keep one row per validity window if gap history ever matters.
-  const reopen = db.prepare("UPDATE facts SET invalid_at = NULL WHERE id = ?");
+  const reopen = db.prepare("UPDATE facts SET invalid_at = NULL, replaced_by = NULL, closed_by = NULL WHERE id = ?");
   const ins = db.prepare(`INSERT INTO facts (project, section, text, source_path, kind, kind_path, valid_at, recorded_at, source_at, last_verified_at, verified_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'author')`);
   const seen = new Set<string>();
@@ -159,7 +190,7 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     seen.add(f.section + "\u0000" + f.text);
     const prior = get.get(path, f.section, f.text) as FactRow | undefined;
     if (prior) {
-      if (prior.invalid_at && prior.replaced_by === null) reopen.run(prior.id);
+      if (prior.invalid_at && (prior.replaced_by === null || prior.closed_by === "reworded")) reopen.run(prior.id);
       continue;
     }
     const c = kinds.get(f.text) ?? { kind: keywordKind(f.text), path: "keyword" as const };
@@ -168,13 +199,14 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     newIds.push({ id: Number(r.lastInsertRowid), f });
     added++;
   }
-  const mark = db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ? WHERE id = ? AND invalid_at IS NULL");
+  // closed_by names the rule that closed the fact; the first rule to close it keeps the name.
+  const mark = db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ?, closed_by = ? WHERE id = ? AND invalid_at IS NULL");
   // (a) "[ ] x" replaced by "[x] x" in the same file
   for (const { id, f } of newIds) {
     if (f.checked !== true) continue;
     const body = f.text.replace(/^\[[xX]\]\s*/, "");
     const olds = db.prepare("SELECT id, text FROM facts WHERE source_path = ? AND invalid_at IS NULL AND text LIKE '[ ]%'").all(path) as FactRow[];
-    for (const o of olds) if (o.text.replace(/^\[ \]\s*/, "") === body) replaced += mark.run(f.valid_at, id, o.id).changes as number;
+    for (const o of olds) if (o.text.replace(/^\[ \]\s*/, "") === body) replaced += mark.run(f.valid_at, id, "checkbox", o.id).changes as number;
   }
   // (b) a "Next:" is replaced by its successor in the same project: the next later-dated one, or the next one
   //     further down the same file on the same day. Each closes at its successor's date, not the newest one's.
@@ -183,24 +215,91 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     .filter((r) => NEXT_RE.test(r.text));
   nexts.forEach((o, i) => {
     const succ = nexts.slice(i + 1).find((n) => n.valid_at > o.valid_at || n.source_path === o.source_path);
-    if (succ) replaced += mark.run(succ.valid_at, succ.id, o.id).changes as number;
+    if (succ) replaced += mark.run(succ.valid_at, succ.id, "next", o.id).changes as number;
   });
-  // (d) handoffs are snapshots: a state-like section in a later handoff replaces the same section in earlier ones
+  // (e) a status-family line of this file is replaced by the earliest later-dated line of the same family in this
+  //     file whose text after the prefix overlaps it by half or more. Lines gone from the file are left to rule (c).
+  const fams = (db.prepare("SELECT id, section, text, valid_at FROM facts WHERE source_path = ? AND invalid_at IS NULL ORDER BY valid_at ASC, id ASC").all(path) as FactRow[])
+    .filter((r) => seen.has(r.section + "\u0000" + r.text))
+    .flatMap((r) => { const f = familyOf(r.text); return f ? [{ ...r, family: f.family, words: words(f.rest) }] : []; });
+  fams.forEach((o, i) => {
+    const succ = fams.slice(i + 1).find((n) => n.family === o.family && n.valid_at > o.valid_at && jaccard(o.words, n.words) >= 0.5);
+    if (succ) replaced += mark.run(succ.valid_at, succ.id, "status_family", o.id).changes as number;
+  });
+  // (d) handoffs are snapshots of one unit of work. Handoff H continues handoff E in the same project when they
+  //     share a slug and E is dated earlier, or H's text names E's file and E is not dated later. A state-like
+  //     section of E is closed by the earliest H that continues it (by date, then path). This file is checked both
+  //     as H and as E, and a (d) close made by a later-sorting H is re-pointed to an earlier one when it arrives,
+  //     so the result does not depend on ingest order.
   if (isHandoff(path)) {
+    const texts = new Map<string, string | null>([[path, content]]);
+    const textOf = (p: string): string => {
+      if (!texts.has(p)) texts.set(p, existsSync(p) ? readFileSync(p, "utf8") : null);
+      return texts.get(p) ?? "";
+    };
+    // Per section: a handoff's date and its first fact there. Rows a rule (c) removal closed do not count.
+    const inSection = db.prepare(`SELECT MAX(valid_at) AS date, MIN(id) AS first FROM facts
+      WHERE source_path = ? AND lower(section) = ? AND (invalid_at IS NULL OR closed_by IS NOT 'removed')`);
+    const liveIn = db.prepare("SELECT id FROM facts WHERE source_path = ? AND lower(section) = ? AND invalid_at IS NULL");
+    // Rows rule (d) already closed, with the path of the handoff that closed them.
+    const closedIn = db.prepare(`SELECT f.id, f.invalid_at, c.source_path AS by FROM facts f JOIN facts c ON c.id = f.replaced_by
+      WHERE f.source_path = ? AND lower(f.section) = ? AND f.closed_by = 'handoff_section'`);
+    const repoint = db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ? WHERE id = ?");
+    const others = (db.prepare("SELECT DISTINCT source_path FROM facts WHERE project = ? AND source_path <> ?").all(project, path) as FactRow[])
+      .map((r) => r.source_path as string).filter(isHandoff);
     const sections = new Set(facts.map((f) => f.section.toLowerCase()).filter((t) => STATE_SECTION.test(t)));
     for (const sec of sections) {
-      const rows = (db.prepare("SELECT id, valid_at, source_path FROM facts WHERE project = ? AND lower(section) = ? AND invalid_at IS NULL ORDER BY valid_at DESC, id ASC").all(project, sec) as FactRow[])
-        .filter((r) => isHandoff(r.source_path));
-      const latest = rows[0];
-      if (!latest) continue;
-      for (const o of rows) {
-        if (o.valid_at < latest.valid_at && o.source_path !== latest.source_path) replaced += mark.run(latest.valid_at, latest.id, o.id).changes as number;
-      }
+      const at = new Map<string, { date: string | null; first: number | null }>();
+      const info = (p: string) => at.get(p) ?? at.set(p, inSection.get(p, sec) as any).get(p)!;
+      const continues = (h: string, e: string): boolean => {
+        const dh = info(h).date, de = info(e).date;
+        if (dh === null || de === null) return false;
+        if (handoffSlug(h) === handoffSlug(e)) return de < dh; // same slug and same date never replace
+        return de <= dh && datedName(e) && namesHandoff(textOf(h), e);
+      };
+      // Sort key of a continuer: its date, then its path.
+      const key = (date: string, p: string): string => date + "\u0000" + p;
+      const close = (e: string, h: string): void => {
+        const { date, first } = info(h);
+        for (const r of liveIn.all(e, sec) as FactRow[]) replaced += mark.run(date, first, "handoff_section", r.id).changes as number;
+        for (const r of closedIn.all(e, sec) as FactRow[])
+          if (key(r.invalid_at, r.by) > key(date!, h)) repoint.run(date, first, r.id);
+      };
+      // this file as E: the earliest other handoff that continues it closes its section
+      const earliest = others.filter((h) => continues(h, path))
+        .sort((a, b) => (key(info(a).date!, a) < key(info(b).date!, b) ? -1 : 1))[0];
+      if (earliest) close(path, earliest);
+      // this file as H: it closes the section in every earlier handoff it continues, or takes over a later H's close
+      for (const e of others) if (continues(path, e)) close(e, path);
     }
   }
-  // (c) lines gone from the file
-  const live = db.prepare("SELECT id, section, text FROM facts WHERE source_path = ? AND invalid_at IS NULL").all(path) as FactRow[];
-  for (const r of live) if (!seen.has(r.section + "\u0000" + r.text)) replaced += mark.run(now, null, r.id).changes as number;
+  // reworded: a line gone from the file is the same fact as a new line in its section whose word sets overlap by
+  //     0.8 or more with the same numbers and negations. Pairs are taken one-to-one, most similar first.
+  //     Next:, checkbox and status-family lines are left to their own rules.
+  const live = db.prepare("SELECT id, section, text, last_verified_at, verified_by FROM facts WHERE source_path = ? AND invalid_at IS NULL").all(path) as FactRow[];
+  const own = (t: string): boolean => NEXT_RE.test(t) || /^\[[ xX]\]/.test(t) || STATUS_FAMILY.test(t);
+  const sig = (t: string) => {
+    const w = words(t);
+    const nums = [...w].filter((x) => /\d/.test(x)).sort().join(" ");
+    const negs = [...w].filter((x) => NEGATIONS.has(x)).concat(t.toLowerCase().replace(/’/g, "'").match(/\p{L}*n't\b/gu) ?? []);
+    return { w, key: nums + "\u0000" + [...new Set(negs)].sort().join(" ") };
+  };
+  const olds = live.filter((r) => !seen.has(r.section + "\u0000" + r.text) && !own(r.text)).map((r) => ({ ...r, ...sig(r.text) }));
+  const news = newIds.filter(({ f }) => !own(f.text)).map(({ id, f }) => ({ id, section: f.section, ...sig(f.text) }));
+  const pairs = olds.flatMap((o) => news.filter((n) => n.section === o.section && n.key === o.key)
+    .map((n) => ({ o, n, sim: jaccard(o.w, n.w) })).filter((p) => p.sim >= 0.8))
+    .sort((a, b) => b.sim - a.sim || a.o.id - b.o.id || a.n.id - b.n.id);
+  const usedOld = new Set<number>(), usedNew = new Set<number>();
+  const inherit = db.prepare("UPDATE facts SET last_verified_at = ?, verified_by = ? WHERE id = ? AND last_verified_at < ?");
+  for (const { o, n } of pairs) {
+    if (usedOld.has(o.id) || usedNew.has(n.id)) continue;
+    usedOld.add(o.id);
+    usedNew.add(n.id);
+    replaced += mark.run(now, n.id, "reworded", o.id).changes as number;
+    inherit.run(o.last_verified_at, o.verified_by, n.id, o.last_verified_at);
+  }
+  // (c) lines gone from the file; mark skips the rows a rewording already closed
+  for (const r of live) if (!seen.has(r.section + "\u0000" + r.text)) replaced += mark.run(now, null, "removed", r.id).changes as number;
   db.prepare("INSERT OR REPLACE INTO sources (path, hash, ingested_at) VALUES (?, ?, ?)").run(path, hashOf(content), now);
   return { added, replaced };
 }
@@ -337,15 +436,21 @@ export function verifyFact(db: DatabaseSync, id: number, now: string): boolean {
   const content = existsSync(f.source_path) ? readFileSync(f.source_path, "utf8") : null;
   const known = db.prepare("SELECT hash FROM sources WHERE path = ?").get(f.source_path) as FactRow | undefined;
   if (known?.hash !== hashOf(content)) ingestCore(db, f.source_path, now, new Map());
-  const cur = db.prepare("SELECT invalid_at FROM facts WHERE id = ?").get(id) as FactRow;
+  const cur = db.prepare("SELECT invalid_at, replaced_by, closed_by FROM facts WHERE id = ?").get(id) as FactRow;
+  const check = db.prepare("INSERT INTO checks (fact_id, ts, age_days, changed, reason, kind) VALUES (?, ?, ?, ?, ?, ?)");
+  // A rewording is not a change: the successor is confirmed now, and the caller retrieves again to find it.
+  if (cur.closed_by === "reworded") {
+    check.run(id, new Date().toISOString(), daysBetween(f.last_verified_at, now), 0, "reworded", f.kind);
+    db.prepare("UPDATE facts SET last_verified_at = ?, verified_by = 'source' WHERE id = ?").run(now, cur.replaced_by);
+    return true;
+  }
   const present = content !== null && extractFacts(f.source_path, content, mtimeDate(f.source_path))
     .some((x) => x.section === f.section && x.text === f.text);
   const ok = present && !cur.invalid_at;
-  db.prepare("INSERT INTO checks (fact_id, ts, age_days, changed, reason) VALUES (?, ?, ?, ?, ?)")
-    .run(id, new Date().toISOString(), daysBetween(f.last_verified_at, now), ok ? 0 : 1,
-      content === null ? "file missing" : !present ? "line gone" : cur.invalid_at ? "replaced on re-ingest" : "line present");
+  check.run(id, new Date().toISOString(), daysBetween(f.last_verified_at, now), ok ? 0 : 1,
+    content === null ? "file missing" : !present ? "line gone" : cur.invalid_at ? "replaced on re-ingest" : "line present", f.kind);
   if (ok) db.prepare("UPDATE facts SET last_verified_at = ?, verified_by = 'source' WHERE id = ?").run(now, id);
-  else db.prepare("UPDATE facts SET invalid_at = ? WHERE id = ? AND invalid_at IS NULL").run(now, id);
+  else db.prepare("UPDATE facts SET invalid_at = ?, closed_by = 'source' WHERE id = ? AND invalid_at IS NULL").run(now, id);
   return !ok;
 }
 

@@ -71,3 +71,26 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
   Local share page with draft post text: `video/dozen/share.html`.
 - Outputs (not in git): `video/dozen/out/a-dozen-times-4k60.mp4`, `a-dozen-times-1080p.mp4`, `poster.jpg`.
 - Not built: a native vertical (9:16) cut for Reels, TikTok and Shorts.
+
+## 2026-10-22 ledger issues plan (#3 to #7, #12)
+- Asked: a plan for #3, #4, #5, #6, #7 and #12, in a form Rubix review can run on.
+  #1 and #13 are held, and #13's schema feeds #1's blind set.
+- Plan: docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md, eight serial tasks, all on freshtime-agnt/ledger.ts.
+- Decided by Jeremy: rule (d) replaces only within a shared slug or when the later handoff names the earlier one (#12).
+- Every test in the plan was run against HEAD f87a374 and behaves as its task predicts, except Task 4's one-word guard, which needs Task 1's closed_by column first.
+- The e2e statement wording was checked offline with the fallback parser: s2 needs "today", or it inherits q7's Sep 30 as-of.
+- Rubix review (2026-10-22): 16 findings, Jeremy applied all.
+  Revision notes are at the end of the plan.
+- Jeremy decided: replay may print a 20-case sample of one rule's closures to the terminal only (--show-sample), never to a file.
+- The plan now stops at checkpoints A (after T2), B (after T3), C (before T6, the P_STALE value) and D (after T8).
+- All revised plan tests were re-run against f87a374 and behave as predicted, with reword tests 2, 4 and 5 needing Task 1's column first.
+- Next: execute the plan from Task 1.
+  The chain has since merged T1 and T2, and the gate journal `docs/reviews/2026-10-22.I3.ledger-issues-batch-review.md` tracks progress.
+
+## 2026-10-22 pi-time on main, chain start
+- Decided by Jeremy: pi-time must not live only on a branch, because it is the tool that tests branches before they merge.
+- main was fast-forwarded to f87a374 (the POC without the ledger plan commits) and pushed, with 3242595 on top: the branch launcher `pi-time/pi-time-branch` and the brief `docs/briefs/2026-10-22.I3.ledger-issues-brief.md`.
+- The launcher is installed as `~/.local/bin/pi-time`: `pi-time` runs main with the real ledger, `pi-time --branch <b>` runs a branch from a detached worktree under `~/.freshtime/worktrees/` with its own ledger under `~/.freshtime/branches/`.
+- This branch now differs from main only by the ledger plan commits, so the chain drives it: the ownership gate passes with 2 changed files.
+- The plan's "no merge to main" line predates this, and the chain's merge card is now the normal review step, decided by Jeremy when it comes up.
+- Next: Jeremy runs `pi-time` once for the first real ledger build on main, and the chain runs the ledger plan from Task 1.

@@ -17,7 +17,8 @@ Todo: a fact written in October that says "shipped on 2026-09-03" is not counted
 Method: a `Next:` replaced on a known date, read as of dates before and after it, and read now.
 Data: `data/valid/history.json`, plus `data/asof/history.json` for the three-Next case.
 A pass proves the old Next is `current_then` before the swap, `replaced` now, and the new one answers after.
-Todo: #7, a newer "Waiting on" bullet does not replace the older one.
+It also proves a newer "Waiting on" bullet about the same thing replaces the older one in the same file.
+Guards: two waits in one session, a wait in another file, a plain bullet, and a wait about something else are not replaced.
 
 ## record
 
@@ -42,10 +43,10 @@ Todo: "next week we ship the importer" inside a 2026-09-07 document is stored as
 
 ## sequence
 
-Method: two same-day `Next:` lines in one file, and two same-day handoff files with the same State section committed in opposite alphabetical order.
-Data: `data/sequence/history.json`.
-A pass proves file order breaks a same-day tie inside one file.
-Todo: defect, the same-day tie between two handoff files is never broken, so both stay current.
+Method: two same-day `Next:` lines in one file, and two same-day handoff files where the second names the first.
+Inline handoff sets add a same-slug pair on two dates, two task handoffs with different slugs, a naming handoff that sorts before the one it names, and a name that only starts with another handoff's name.
+Data: `data/sequence/history.json`, and inline handoff files in `sequence.test.ts`.
+A pass proves file order breaks a same-day tie inside one file, and a handoff's State replaces only the State of the handoff it continues, by shared slug or by naming its file, in any ingest order.
 
 ## verification
 

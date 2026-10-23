@@ -158,7 +158,7 @@ test("same-day Next: earlier in the file is replaced by the later one", async ()
 test("a state section in a later handoff replaces the same section in an earlier one", async () => {
   const dir = tmp(), db = openDb(":memory:");
   const a = write(dir, "proj/docs/handoffs/2026-10-01.a.md", "## State\n- the parser is half written\n## Decisions\n- decided to keep the parser in TypeScript\n");
-  const b = write(dir, "proj/docs/handoffs/2026-10-09.b.md", "## State\n- the parser is merged and released\n");
+  const b = write(dir, "proj/docs/handoffs/2026-10-09.a.md", "## State\n- the parser is merged and released\n");
   await ingestPaths(db, [b, a], "2026-10-10"); // order must not matter
   const r = read(db, "parser");
   assert.equal(r.facts.find((f) => f.text.includes("half written"))?.status, "replaced");
