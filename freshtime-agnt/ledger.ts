@@ -19,6 +19,22 @@ export interface ExtractedFact {
 const DATE_RE = /\d{4}-\d{2}-\d{2}/;
 const NEXT_RE = /^(\[[ xX]\]\s*)?[*_]*next[*_]*\s*:/i;
 const STATE_SECTION = /\b(state|status|next|open|blocked|recent|remaining|resume|current)\b/i;
+// A status-family line starts with "Waiting on/for", "Blocked on/by", or a Status:, State:, Currently: or In progress: label.
+export const STATUS_FAMILY = /^(?:\[[ xX]\]\s*)?[*_]*(?:(waiting\s+(?:on|for)|blocked\s+(?:on|by))\b|(status|state|currently|in\s+progress)[*_]*\s*:)[*_]*\s*/i;
+// The family of a line and its text after the family prefix, or null. Next: lines are never in a family.
+function familyOf(text: string): { family: string; rest: string } | null {
+  const m = NEXT_RE.test(text) ? null : text.match(STATUS_FAMILY);
+  if (!m) return null;
+  const family = m[1] ? m[1].toLowerCase().split(/\s+/)[0] : m[2].toLowerCase().replace(/\s+/g, " ");
+  return { family, rest: text.slice(m[0].length) };
+}
+export const words = (text: string): Set<string> => new Set(text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
+export function jaccard(a: Set<string>, b: Set<string>): number {
+  let both = 0;
+  for (const w of a) if (b.has(w)) both++;
+  const union = a.size + b.size - both;
+  return union ? both / union : 0;
+}
 const isHandoff = (p: string): boolean => /\/docs\/handoffs\/[^/]+\.md$/.test(p) || basename(p) === "HANDOFF.md";
 // The unit of work a handoff is about: "2026-10-01.i4-t1-parser.resume.md" -> "i4-t1-parser".
 export const handoffSlug = (p: string): string =>
@@ -198,6 +214,15 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
   nexts.forEach((o, i) => {
     const succ = nexts.slice(i + 1).find((n) => n.valid_at > o.valid_at || n.source_path === o.source_path);
     if (succ) replaced += mark.run(succ.valid_at, succ.id, "next", o.id).changes as number;
+  });
+  // (e) a status-family line of this file is replaced by the earliest later-dated line of the same family in this
+  //     file whose text after the prefix overlaps it by half or more. Lines gone from the file are left to rule (c).
+  const fams = (db.prepare("SELECT id, section, text, valid_at FROM facts WHERE source_path = ? AND invalid_at IS NULL ORDER BY valid_at ASC, id ASC").all(path) as FactRow[])
+    .filter((r) => seen.has(r.section + "\u0000" + r.text))
+    .flatMap((r) => { const f = familyOf(r.text); return f ? [{ ...r, family: f.family, words: words(f.rest) }] : []; });
+  fams.forEach((o, i) => {
+    const succ = fams.slice(i + 1).find((n) => n.family === o.family && n.valid_at > o.valid_at && jaccard(o.words, n.words) >= 0.5);
+    if (succ) replaced += mark.run(succ.valid_at, succ.id, "status_family", o.id).changes as number;
   });
   // (d) handoffs are snapshots of one unit of work. Handoff H continues handoff E in the same project when they
   //     share a slug and E is dated earlier, or H's text names E's file and E is not dated later. A state-like

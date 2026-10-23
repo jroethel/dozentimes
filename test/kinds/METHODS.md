@@ -17,7 +17,8 @@ Todo: a fact written in October that says "shipped on 2026-09-03" is not counted
 Method: a `Next:` replaced on a known date, read as of dates before and after it, and read now.
 Data: `data/valid/history.json`, plus `data/asof/history.json` for the three-Next case.
 A pass proves the old Next is `current_then` before the swap, `replaced` now, and the new one answers after.
-Todo: #7, a newer "Waiting on" bullet does not replace the older one.
+It also proves a newer "Waiting on" bullet about the same thing replaces the older one in the same file.
+Guards: two waits in one session, a wait in another file, a plain bullet, and a wait about something else are not replaced.
 
 ## record
 
