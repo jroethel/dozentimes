@@ -23,7 +23,7 @@ nodes:
   - id: plan
     name: "Plan stage"
     type: agent
-    model: &chain-model opus
+    model: &chain-model zai/glm-5.3
     allowedTools: &stage-tools [Read, Edit, Write, Grep, Glob, Bash, Skill, Agent, ToolSearch, TaskCreate, TaskUpdate, TaskList, TaskGet]
     prompt: |
       Preflight for this chain reported:
