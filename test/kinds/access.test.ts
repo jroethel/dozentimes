@@ -13,7 +13,7 @@ test("maintain with budget 1 checks the recently read stale fact first", async (
   readFacts(db, null, { now: "2026-10-19", ledger: true, verify: false, query: "exporter" });
   assert.equal(fact(db, "%orchard exporter%").last_accessed_at, "2026-10-19");
   assert.equal(fact(db, "%orchard schema%").last_accessed_at, null);
-  assert.deepEqual(maintain(db, "2026-10-20", 1), { checked: 1, changed: 0 });
+  assert.deepEqual(await maintain(db, "2026-10-20", 1), { checked: 1, changed: 0, reclassified: 0 });
   const ids = (db.prepare("SELECT fact_id FROM checks").all() as any[]).map((r) => r.fact_id);
   assert.deepEqual(ids, [b.id]);
   assert.equal(fact(db, "%orchard schema%").last_verified_at, a.last_verified_at);

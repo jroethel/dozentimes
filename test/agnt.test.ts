@@ -112,7 +112,7 @@ test("verify=true re-reads only needs_check facts; maintain respects budget", as
   assert.ok(r.facts.every((f) => f.status === "current"));
   const again = read(db, "extractor sqlite blocked", { now: "2026-10-11", verify: true });
   assert.equal(again.checks, 0);
-  assert.deepEqual(maintain(db, "2026-10-30", 1), { checked: 1, changed: 0 });
+  assert.deepEqual(await maintain(db, "2026-10-30", 1), { checked: 1, changed: 0, reclassified: 0 });
 });
 
 test("appended later session replaces old Next: on verify and read reruns retrieval", async () => {
