@@ -201,8 +201,9 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
   });
   // (d) handoffs are snapshots of one unit of work. Handoff H continues handoff E in the same project when they
   //     share a slug and E is dated earlier, or H's text names E's file and E is not dated later. A state-like
-  //     section of E is closed by the latest H that continues it (by date, then path). This file is checked both
-  //     as H and as E, so the result does not depend on ingest order.
+  //     section of E is closed by the earliest H that continues it (by date, then path). This file is checked both
+  //     as H and as E, and a (d) close made by a later-sorting H is re-pointed to an earlier one when it arrives,
+  //     so the result does not depend on ingest order.
   if (isHandoff(path)) {
     const texts = new Map<string, string | null>([[path, content]]);
     const textOf = (p: string): string => {
@@ -213,6 +214,10 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
     const inSection = db.prepare(`SELECT MAX(valid_at) AS date, MIN(id) AS first FROM facts
       WHERE source_path = ? AND lower(section) = ? AND (invalid_at IS NULL OR closed_by IS NOT 'removed')`);
     const liveIn = db.prepare("SELECT id FROM facts WHERE source_path = ? AND lower(section) = ? AND invalid_at IS NULL");
+    // Rows rule (d) already closed, with the path of the handoff that closed them.
+    const closedIn = db.prepare(`SELECT f.id, f.invalid_at, c.source_path AS by FROM facts f JOIN facts c ON c.id = f.replaced_by
+      WHERE f.source_path = ? AND lower(f.section) = ? AND f.closed_by = 'handoff_section'`);
+    const repoint = db.prepare("UPDATE facts SET invalid_at = ?, replaced_by = ? WHERE id = ?");
     const others = (db.prepare("SELECT DISTINCT source_path FROM facts WHERE project = ? AND source_path <> ?").all(project, path) as FactRow[])
       .map((r) => r.source_path as string).filter(isHandoff);
     const sections = new Set(facts.map((f) => f.section.toLowerCase()).filter((t) => STATE_SECTION.test(t)));
@@ -225,14 +230,19 @@ function ingestCore(db: DatabaseSync, path: string, now: string, kinds: Map<stri
         if (handoffSlug(h) === handoffSlug(e)) return de < dh; // same slug and same date never replace
         return de <= dh && datedName(e) && namesHandoff(textOf(h), e);
       };
+      // Sort key of a continuer: its date, then its path.
+      const key = (date: string, p: string): string => date + "\u0000" + p;
       const close = (e: string, h: string): void => {
-        for (const r of liveIn.all(e, sec) as FactRow[]) replaced += mark.run(info(h).date, info(h).first, "handoff_section", r.id).changes as number;
+        const { date, first } = info(h);
+        for (const r of liveIn.all(e, sec) as FactRow[]) replaced += mark.run(date, first, "handoff_section", r.id).changes as number;
+        for (const r of closedIn.all(e, sec) as FactRow[])
+          if (key(r.invalid_at, r.by) > key(date!, h)) repoint.run(date, first, r.id);
       };
-      // this file as E: the latest other handoff that continues it closes its section
-      const later = others.filter((h) => continues(h, path))
-        .sort((a, b) => (info(a).date! < info(b).date! ? -1 : info(a).date! > info(b).date! ? 1 : a < b ? -1 : 1)).at(-1);
-      if (later) close(path, later);
-      // this file as H: it closes the section in every earlier handoff it continues
+      // this file as E: the earliest other handoff that continues it closes its section
+      const earliest = others.filter((h) => continues(h, path))
+        .sort((a, b) => (key(info(a).date!, a) < key(info(b).date!, b) ? -1 : 1))[0];
+      if (earliest) close(path, earliest);
+      // this file as H: it closes the section in every earlier handoff it continues, or takes over a later H's close
       for (const e of others) if (continues(path, e)) close(e, path);
     }
   }
