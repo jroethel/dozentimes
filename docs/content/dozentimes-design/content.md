@@ -324,7 +324,7 @@ Table intro: Four tools reach the model. [src: pi-time/agent/extensions/dozentim
 
 Before each turn a hook parses the prompt, adds the reading and three rules to the system prompt, and updates the status line. [src: pi-time/agent/extensions/dozentimes/index.ts:187-196] [src: pi-time/agent/extensions/dozentimes/index.ts:259-270]
 The rules are to call dozentimes_ask for project questions, say the reading back in one line, and never present a replaced or needs_check fact as current.
-The status line reads "ft <facts> facts | <stale> stale | reading: as of 2026-10-14 (inherited from earlier) | jev ok", and the last field turns to "jev FALLBACK n" after any Jev error in the session. [src: pi-time/agent/extensions/dozentimes/index.ts:96-105]
+The status line reads "dt <facts> facts | <stale> stale | reading: as of 2026-10-14 (inherited from earlier) | jev ok", and the last field turns to "jev FALLBACK n" after any Jev error in the session. [src: pi-time/agent/extensions/dozentimes/index.ts:96-105]
 /dozentimes shows counts by status and class, the held as-of, the top projects, the last 10 traces and the remaining work. [src: pi-time/agent/extensions/dozentimes/index.ts:213-224]
 Its subcommands are ingest, maintain, asof and trace. [src: pi-time/agent/extensions/dozentimes/index.ts:198-226]
 

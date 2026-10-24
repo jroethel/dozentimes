@@ -17,7 +17,7 @@ const spec = {
 };
 
 test("genHistory sets commit dates, author, mtimes and clone", () => {
-  const out = mkdtempSync(join(tmpdir(), "ft-gen-"));
+  const out = mkdtempSync(join(tmpdir(), "dt-gen-"));
   const { repo, clone } = genHistory(spec, out);
   const log = execFileSync("git", ["log", "--format=%an|%as|%cs", "--reverse"], { cwd: repo, encoding: "utf8" }).trim().split("\n");
   assert.deepEqual(log, ["dozentimes-test|2026-09-01|2026-09-01", "dozentimes-test|2026-09-10|2026-09-10"]);
@@ -27,7 +27,7 @@ test("genHistory sets commit dates, author, mtimes and clone", () => {
 });
 
 test("checkoutAt returns the tree as of a date", () => {
-  const out = mkdtempSync(join(tmpdir(), "ft-gen-"));
+  const out = mkdtempSync(join(tmpdir(), "dt-gen-"));
   const { repo } = genHistory(spec, out);
   assert.deepEqual(checkoutAt(repo, "2026-08-31"), {});
   assert.deepEqual(checkoutAt(repo, "2026-09-05"), { "p/a.md": "one\n", "p/b.md": "keep\n" });

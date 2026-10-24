@@ -8,7 +8,7 @@ import type { TemporalIntent } from "../dozentimes-core/index.ts";
 import { extractFacts, ingestFile, ingestPaths, discoverSources, readFacts, verifyFact, maintain, classify } from "../dozentimes-agnt/ledger.ts";
 
 process.env.DOZENTIMES_JEV = "off";
-const tmp = () => mkdtempSync(join(tmpdir(), "ft-agnt-"));
+const tmp = () => mkdtempSync(join(tmpdir(), "dt-agnt-"));
 const write = (dir: string, rel: string, body: string) => {
   const p = join(dir, rel);
   mkdirSync(join(p, ".."), { recursive: true });

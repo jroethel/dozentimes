@@ -33,7 +33,7 @@ function score(q: Question, facts: LedgerFact[]) {
 
 // A fresh copy of the fixtures, ingested at ingest_at, then edited behind the ledger's back.
 async function setup(config: Config) {
-  const dir = mkdtempSync(join(tmpdir(), `ft-ablation-${config}-`));
+  const dir = mkdtempSync(join(tmpdir(), `dt-ablation-${config}-`));
   cpSync(FIX, dir, { recursive: true, filter: (p) => !p.endsWith(".json") });
   const db = openDb(":memory:");
   const stamp = (file: string, day: string) => utimesSync(file, parseIso(day), parseIso(day));

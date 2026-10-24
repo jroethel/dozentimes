@@ -100,7 +100,7 @@ function status(ctx: Ctx): void {
     const reading = lastIntent ? describeIntent(lastIntent).replace(/^answering /, "") : "none yet";
     const fb = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE id > ? AND path = 'fallback' AND error IS NOT NULL").get(traceBase) as { n: number }).n;
     const jev = fb ? `jev FALLBACK ${fb}` : jevEnabled() ? "jev ok" : "jev off";
-    ctx.ui.setStatus("dozentimes", `ft ${s.total} facts | ${s.byStatus.needs_check} stale | reading: ${reading} | ${jev}`);
+    ctx.ui.setStatus("dozentimes", `dt ${s.total} facts | ${s.byStatus.needs_check} stale | reading: ${reading} | ${jev}`);
   } catch { /* status is best effort */ }
 }
 

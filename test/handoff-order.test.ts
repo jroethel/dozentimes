@@ -11,7 +11,7 @@ process.env.DOZENTIMES_JEV = "off";
 
 // Rule (d) closes E's State at the earliest handoff that continues E (D16), whatever order the files arrive in.
 const write = (files: Record<string, string>) => {
-  const dir = mkdtempSync(join(tmpdir(), "ft-order-"));
+  const dir = mkdtempSync(join(tmpdir(), "dt-order-"));
   return Object.entries(files).map(([name, body]) => {
     const p = join(dir, "kiln/docs/handoffs", name);
     mkdirSync(dirname(p), { recursive: true });

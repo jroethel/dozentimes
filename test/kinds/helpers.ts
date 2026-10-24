@@ -14,7 +14,7 @@ export const data = <T = any>(kind: string, file = "history.json"): T =>
   JSON.parse(readFileSync(new URL(`./data/${kind}/${file}`, import.meta.url), "utf8"));
 
 export const build = (kind: string) =>
-  genHistory(data<HistorySpec>(kind), mkdtempSync(join(tmpdir(), `ft-kind-${kind}-`)));
+  genHistory(data<HistorySpec>(kind), mkdtempSync(join(tmpdir(), `dt-kind-${kind}-`)));
 
 export const ingestDir = (db: DatabaseSync, dir: string, now: string) => ingestPaths(db, discoverSources([dir]), now);
 
@@ -30,7 +30,7 @@ export async function replay(db: DatabaseSync, repo: string, work: string, dates
   }
 }
 
-export const tmp = (kind: string) => mkdtempSync(join(tmpdir(), `ft-kind-${kind}-`));
+export const tmp = (kind: string) => mkdtempSync(join(tmpdir(), `dt-kind-${kind}-`));
 
 export const intent = (over: Partial<TemporalIntent>): TemporalIntent =>
   ({ asof_mode: "current", anchor: null, basis: "default", kinds: [], confidence: 1, path: "fallback", query: "", ...over });

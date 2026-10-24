@@ -8,7 +8,7 @@ import { openDb } from "../dozentimes-core/index.ts";
 import { ingestFile, verifyFact } from "../dozentimes-agnt/ledger.ts";
 
 process.env.DOZENTIMES_JEV = "off";
-const tmp = () => mkdtempSync(join(tmpdir(), "ft-reword-"));
+const tmp = () => mkdtempSync(join(tmpdir(), "dt-reword-"));
 const write = (dir: string, rel: string, body: string) => {
   const p = join(dir, rel);
   mkdirSync(dirname(p), { recursive: true });

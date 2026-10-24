@@ -10,7 +10,7 @@ import { ingestFile, maintain, reclassify } from "../dozentimes-agnt/ledger.ts";
 import type { Classified } from "../dozentimes-agnt/ledger.ts";
 
 process.env.DOZENTIMES_JEV = "off";
-const tmp = () => mkdtempSync(join(tmpdir(), "ft-reclass-"));
+const tmp = () => mkdtempSync(join(tmpdir(), "dt-reclass-"));
 const write = (dir: string, rel: string, body: string) => {
   const p = join(dir, rel);
   mkdirSync(dirname(p), { recursive: true });

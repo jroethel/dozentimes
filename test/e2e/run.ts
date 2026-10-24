@@ -44,7 +44,7 @@ interface Turn {
 }
 
 async function once(n: number, out: string) {
-  const dir = mkdtempSync(join(tmpdir(), "ft-e2e-"));
+  const dir = mkdtempSync(join(tmpdir(), "dt-e2e-"));
   const db = join(dir, "ledger.db");
   const trace = join(dir, "trace.jsonl");
   const work = join(dir, "work");

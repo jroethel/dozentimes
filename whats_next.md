@@ -120,7 +120,12 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Jeremy chose a full rename: the repo folder `~/create/dozentimes`, the source folders `dozentimes-core/`, `dozentimes-intf/` and `dozentimes-agnt/`, the `DOZENTIMES_*` env vars, the `dozentimes_ask` tool, the `/dozentimes` command, the `pi-time/agent/extensions/dozentimes/` extension, the `~/.dozentimes/` data folder and the GitHub repo `jroethel/dozentimes`.
 - Every tracked text file was rewritten, dated history docs included, and the design PDF was re-rendered (16 pages, as before).
 - The possessive is written "dozentimes'".
+- The status line prefix and the test temp folder prefixes changed from `ft` to `dt`.
 - The films were not re-rendered: #15 rewrites the A Dozen Times ending tagline, which now repeats "dozen times", and then re-renders both films.
 - The ledger's `source_path` and `project` values for this repo were rewritten to the new folder and name, so its facts are not ingested a second time.
 - `npm test`: tests 92, pass 85, fail 0, todo 7, the same as before the rename.
+- Outside the repo, done once on this machine, and needed on any other machine that pulls main: `mv ~/.freshtime ~/.dozentimes`, `mv ~/create/freshtime ~/create/dozentimes`, `git -C ~/create/dozentimes worktree repair ~/.dozentimes/worktrees/*`, and `install -m 755 pi-time/pi-time-branch ~/.local/bin/pi-time`.
+- The ledger rows were rewritten in `~/.dozentimes/ledger.db` and in the branch ledger, each in one transaction: `facts.source_path` and `sources.path` from `/Users/jjrdar/create/freshtime/` to `/Users/jjrdar/create/dozentimes/`, `conversation:freshtime` to `conversation:dozentimes`, `facts.project` from freshtime to dozentimes, then `INSERT INTO facts_fts(facts_fts) VALUES('rebuild')`.
+- The pre-rename ledger is kept at `~/.dozentimes/ledger.pre-rename-2026-10-24.db` for rollback, and can be deleted once pi-time has run cleanly.
+- Claude Code history was copied to `~/.claude/projects/-Users-jjrdar-create-dozentimes`.
 - Next: #14 (`agent:todo`), and #15 when the tagline is chosen.
