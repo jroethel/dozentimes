@@ -117,6 +117,7 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Next: #14 (`agent:todo`), a later doc edit closes the conversation fact it contradicts. #1 waits on Jeremy's blind questions.
 
 ## 2026-10-24 renamed freshtime to dozentimes
+- The full record, with the SQL, the steps for another machine and how to undo it, is `docs/2026-10-24.rename-ledger.md`.
 - Jeremy chose a full rename: the repo folder `~/create/dozentimes`, the source folders `dozentimes-core/`, `dozentimes-intf/` and `dozentimes-agnt/`, the `DOZENTIMES_*` env vars, the `dozentimes_ask` tool, the `/dozentimes` command, the `pi-time/agent/extensions/dozentimes/` extension, the `~/.dozentimes/` data folder and the GitHub repo `jroethel/dozentimes`.
 - Every tracked text file was rewritten, dated history docs included, and the design PDF was re-rendered (16 pages, as before).
 - The possessive is written "dozentimes'".
