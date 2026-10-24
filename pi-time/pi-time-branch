@@ -2,11 +2,11 @@
 # pi-time-branch: run pi-time from any branch of this repo, whatever the main checkout has out.
 # Usage: pi-time [--branch <branch>] [pi args...]   (default branch: main, run from any directory)
 # Install: install -m 755 pi-time/pi-time-branch ~/.local/bin/pi-time
-# Each branch runs from a detached worktree under ~/.freshtime/worktrees/, moved to the branch tip on
-# every launch, so only committed code runs. main uses the real ledger (~/.freshtime/ledger.db); any
-# other branch gets its own under ~/.freshtime/branches/, so testing a branch cannot change it.
+# Each branch runs from a detached worktree under ~/.dozentimes/worktrees/, moved to the branch tip on
+# every launch, so only committed code runs. main uses the real ledger (~/.dozentimes/ledger.db); any
+# other branch gets its own under ~/.dozentimes/branches/, so testing a branch cannot change it.
 set -euo pipefail
-repo="${FRESHTIME_HOME:-$HOME/create/freshtime}"
+repo="${DOZENTIMES_HOME:-$HOME/create/dozentimes}"
 branch=main
 if [ "${1:-}" = --branch ]; then branch="${2:?--branch needs a branch name}"; shift 2; fi
 
@@ -19,7 +19,7 @@ if ! git -C "$repo" cat-file -e "refs/heads/$branch:pi-time/pi-time" 2>/dev/null
 fi
 
 slug="${branch//\//-}"
-wt="$HOME/.freshtime/worktrees/$slug"
+wt="$HOME/.dozentimes/worktrees/$slug"
 if [ -d "$wt" ]; then
   if [ -n "$(git -C "$wt" status --porcelain)" ]; then
     echo "pi-time: $wt has local edits; commit them on a branch or remove them first" >&2
@@ -31,5 +31,5 @@ else
   git -C "$repo" worktree add -q --detach "$wt" "refs/heads/$branch"
 fi
 
-[ "$branch" = main ] || export FRESHTIME_DB="${FRESHTIME_DB:-$HOME/.freshtime/branches/$slug/ledger.db}"
+[ "$branch" = main ] || export DOZENTIMES_DB="${DOZENTIMES_DB:-$HOME/.dozentimes/branches/$slug/ledger.db}"
 exec "$wt/pi-time/pi-time" "$@"

@@ -1,14 +1,14 @@
-# freshtime
+# dozentimes
 
 Two time tools for agent memory that share one contract, and a pi environment that uses both.
 
-| Path              | What it is                                                                         |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| `freshtime-core/` | The shared contract (`TemporalIntent`, `LedgerFact`), SQLite, traces, Jev client.  |
-| `freshtime-intf/` | Temporal intent: a question plus conversation state becomes a typed time reading.  |
-| `freshtime-agnt/` | Freshness ledger: dated facts with volatility, verification and status.            |
-| `pi-time/`        | pi with both tools, in its own agent dir.                                          |
-| `test/`           | Unit tests and the ablation test that shows what the pair adds.                    |
+| Path               | What it is                                                                        |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `dozentimes-core/` | The shared contract (`TemporalIntent`, `LedgerFact`), SQLite, traces, Jev client. |
+| `dozentimes-intf/` | Temporal intent: a question plus conversation state becomes a typed time reading. |
+| `dozentimes-agnt/` | Freshness ledger: dated facts with volatility, verification and status.           |
+| `pi-time/`         | pi with both tools, in its own agent dir.                                         |
+| `test/`            | Unit tests and the ablation test that shows what the pair adds.                   |
 
 The design comes from the October 2026 memory-systems research, "Two tools, one contract".
 
@@ -18,9 +18,9 @@ The design comes from the October 2026 memory-systems research, "Two tools, one 
 ./pi-time/pi-time
 ```
 
-The first run builds the ledger at `~/.freshtime/ledger.db` from `whats_next.md`, `HANDOFF.md`, `docs/handoffs/*.md` and `learning_guide*.html` under `~/create` and `~/repos`.
+The first run builds the ledger at `~/.dozentimes/ledger.db` from `whats_next.md`, `HANDOFF.md`, `docs/handoffs/*.md` and `learning_guide*.html` under `~/create` and `~/repos`.
 It then lists the remaining work.
-Set `FRESHTIME_ROOTS` (colon-separated) to scan other folders, and `FRESHTIME_DB` to use another ledger file.
+Set `DOZENTIMES_ROOTS` (colon-separated) to scan other folders, and `DOZENTIMES_DB` to use another ledger file.
 
 To run pi-time from any branch, whatever this checkout has out, install the branch launcher once:
 
@@ -30,24 +30,24 @@ pi-time                            # main, with the real ledger
 pi-time --branch feat/some-branch  # a branch under test, with its own ledger
 ```
 
-Each branch runs from a detached worktree under `~/.freshtime/worktrees/`, moved to the branch tip on every launch, so only committed code runs.
-A branch other than main gets its own ledger under `~/.freshtime/branches/`, so testing it cannot change `~/.freshtime/ledger.db`.
-Set `FRESHTIME_HOME` if the repo is not at `~/create/freshtime`.
+Each branch runs from a detached worktree under `~/.dozentimes/worktrees/`, moved to the branch tip on every launch, so only committed code runs.
+A branch other than main gets its own ledger under `~/.dozentimes/branches/`, so testing it cannot change `~/.dozentimes/ledger.db`.
+Set `DOZENTIMES_HOME` if the repo is not at `~/create/dozentimes`.
 
 Inside pi-time:
 
 - Every prompt gets a time reading, such as "answering as of 2026-10-14 (inherited from earlier)", shown in the status line.
-- `freshtime_ask` runs the pair: intent first, then the ledger reads at that time and re-checks stale facts against their source files.
+- `dozentimes_ask` runs the pair: intent first, then the ledger reads at that time and re-checks stale facts against their source files.
 - `temporal_intent`, `ledger_query` and `ledger_verify` run each side alone.
 - `ledger_record` records what you say about a fact: that it still holds, or that it changed, with the new value when you give one.
-- `/freshtime` shows ledger counts, the last traces and remaining work. `/freshtime ingest`, `/freshtime maintain 10`, `/freshtime asof 2026-10-14`, `/freshtime asof clear` and `/freshtime trace 20` do what they say.
+- `/dozentimes` shows ledger counts, the last traces and remaining work. `/dozentimes ingest`, `/dozentimes maintain 10`, `/dozentimes asof 2026-10-14`, `/dozentimes asof clear` and `/dozentimes trace 20` do what they say.
 
 Outside pi:
 
 ```sh
-node freshtime-intf/cli.ts "As of Oct 14, what was the plan?" "and for beta?"
-node freshtime-agnt/cli.ts summary
-node freshtime-agnt/cli.ts trace 20
+node dozentimes-intf/cli.ts "As of Oct 14, what was the plan?" "and for beta?"
+node dozentimes-agnt/cli.ts summary
+node dozentimes-agnt/cli.ts trace 20
 ```
 
 ## Test
@@ -57,9 +57,9 @@ npm test                      # unit tests and the ablation, offline
 node test/ablation.ts         # the ablation table
 node test/ablation.ts --cold  # same, with a fresh ledger per question
 node test/ablation.ts --jev   # intent read by Jev instead of the rules
-node freshtime-intf/score.ts  # rules against Jev on 20 labeled questions
+node dozentimes-intf/score.ts  # rules against Jev on 20 labeled questions
 npm run kinds                 # coverage matrix for the twelve kinds of time
-npm run replay -- --jev       # replay real doc history from git (results in ~/.freshtime/replay/)
+npm run replay -- --jev       # replay real doc history from git (results in ~/.dozentimes/replay/)
 npm run e2e -- --runs 2       # real pi + glm-5.3 through the seven-question chat, judged by Jev
 npm run probe                 # contrived questions that fool the rules: is Jev doing anything?
 npm run e2e -- --fallback     # same with a bad Jev key: answers must still arrive

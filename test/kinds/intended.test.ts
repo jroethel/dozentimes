@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../../freshtime-core/index.ts";
-import { parseIntent } from "../../freshtime-intf/intent.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import { parseIntent } from "../../dozentimes-intf/intent.ts";
 import { data } from "./helpers.ts";
 
 interface Q { q: string; now: string; mode: string; start: string; end: string }

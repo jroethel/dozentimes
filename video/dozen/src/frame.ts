@@ -395,10 +395,10 @@ export function outro(ctx: Ctx, t: number, live?: Canvas) {
   if (ma > 0) {
     ctx.font = sans(34, 600);
     ctx.letterSpacing = "3px";
-    const w = ctx.measureText("freshtime").width;
+    const w = ctx.measureText("dozentimes").width;
     ctx.letterSpacing = "0px";
     dot(ctx, 960 - w / 2 - 20, 738, 7, p.acc, ma);
-    text(ctx, "freshtime", 960 - w / 2, 750, sans(34, 600), p.ink, ma, "left", 3);
+    text(ctx, "dozentimes", 960 - w / 2, 750, sans(34, 600), p.ink, ma, "left", 3);
   }
   const end = ph(t, C.fade + 0.2, 60, ease.io2);
   if (end > 0) { ctx.fillStyle = rgba("#000000", end); ctx.fillRect(0, 0, 1920, 1080); }

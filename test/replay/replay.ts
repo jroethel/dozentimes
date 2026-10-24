@@ -1,22 +1,22 @@
 // Real-data replay from git. Replays the history of handoff documents through the ledger and scores it against git.
-// Real content never leaves the process: output is counts and rates only, written under ~/.freshtime/replay/<date>/.
+// Real content never leaves the process: output is counts and rates only, written under ~/.dozentimes/replay/<date>/.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync, realpathSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import type { Volatility } from "../../freshtime-core/index.ts";
-import { SHELF_LIFE_DAYS, addDays, daysBetween, isoDate, openDb, parseIso } from "../../freshtime-core/index.ts";
-import { extractFacts, handoffSlug, ingestFile } from "../../freshtime-agnt/ledger.ts";
+import type { Volatility } from "../../dozentimes-core/index.ts";
+import { SHELF_LIFE_DAYS, addDays, daysBetween, isoDate, openDb, parseIso } from "../../dozentimes-core/index.ts";
+import { extractFacts, handoffSlug, ingestFile } from "../../dozentimes-agnt/ledger.ts";
 
 // ---------- args ----------
 const argv = process.argv.slice(2);
 const flag = (n: string): string | undefined => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
 const roots = (flag("--roots") ?? [join(homedir(), "create"), join(homedir(), "repos")].join(":")).split(":").filter(Boolean);
 const maxSources = Number(flag("--max-sources") ?? Infinity);
-const outDir = flag("--out") ?? join(homedir(), ".freshtime", "replay", isoDate(new Date()));
+const outDir = flag("--out") ?? join(homedir(), ".dozentimes", "replay", isoDate(new Date()));
 const useJev = argv.includes("--jev");
 const showSample = flag("--show-sample"); // prints fact text to the terminal only, never to report.md or results.json
-if (!useJev) process.env.FRESHTIME_JEV = "off"; // keyword classification: fast, free, deterministic
+if (!useJev) process.env.DOZENTIMES_JEV = "off"; // keyword classification: fast, free, deterministic
 
 const MIN_COMMITS = 3;
 const MAX_VERSIONS = 300; // newest N versions per source; older history is dropped (counted in the report)
@@ -207,8 +207,8 @@ const pick = (n: number, k: number): number[] =>
 
 // kinds: class per fact key from the main replay ledger, so Jev classifies each text once. Pair ingests use keyword mode.
 async function freshnessCheck(versions: Version[], fr: Record<string, Fresh>, misc: Cnt, kinds: Map<string, Volatility>): Promise<void> {
-  const prevJev = process.env.FRESHTIME_JEV;
-  process.env.FRESHTIME_JEV = "off";
+  const prevJev = process.env.DOZENTIMES_JEV;
+  process.env.DOZENTIMES_JEV = "off";
   const t1s = pick(versions.length - 1, PAIR_T1);
   for (const i of t1s) {
     const later = versions.length - 1 - i;
@@ -243,7 +243,7 @@ async function freshnessCheck(versions: Version[], fr: Record<string, Fresh>, mi
       } finally { rmSync(dir, { recursive: true, force: true }); }
     }
   }
-  if (prevJev === undefined) delete process.env.FRESHTIME_JEV; else process.env.FRESHTIME_JEV = prevJev;
+  if (prevJev === undefined) delete process.env.DOZENTIMES_JEV; else process.env.DOZENTIMES_JEV = prevJev;
 }
 
 // ---------- report ----------

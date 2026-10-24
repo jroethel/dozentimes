@@ -1,4 +1,4 @@
-# Run log - freshtime design explanation
+# Run log - dozentimes design explanation
 
 ## Intake
 
@@ -6,7 +6,7 @@
 - Personas: architecture-reviewer, resolved in the distributed tier of the installed persona plugin, and no user-tier copy shadows it.
 - The Why: the project owner needs one place that explains how the four parts fit, what the tests prove, and what to build next, before a fresh session works the open issues.
 - Altitude: the owner reads at the mechanism level, summary first and then the detail.
-- Source set: the paths in the content front matter, plus docs/content/freshtime-design/runs-2026-10-22.txt.
+- Source set: the paths in the content front matter, plus docs/content/dozentimes-design/runs-2026-10-22.txt.
 - Path: minimal. The request came as a delegated task with its content specified, so no intake round with the owner was possible.
 
 Intake answers came from the task message, not from a live round with the owner.

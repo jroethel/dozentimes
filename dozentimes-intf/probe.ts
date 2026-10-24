@@ -1,9 +1,9 @@
-// node freshtime-intf/probe.ts [--runs N] - is Jev doing anything the rules do not?
+// node dozentimes-intf/probe.ts [--runs N] - is Jev doing anything the rules do not?
 // Scores three paths on test/fixtures/intent-probe.json: the rules alone, Jev's raw mode choice alone, and the
 // combined parseIntent (rules + Jev + guards). Jev never sees the rules' answer, so agreement is not copying.
 import { readFileSync } from "node:fs";
-import type { Anchor } from "../freshtime-core/contract.ts";
-import { jevEnabled } from "../freshtime-core/jev.ts";
+import type { Anchor } from "../dozentimes-core/contract.ts";
+import { jevEnabled } from "../dozentimes-core/jev.ts";
 import { fallbackIntent, jevAnswers, parseIntent } from "./intent.ts";
 
 interface Item { group: string; why: string; question: string; ambient: Anchor | null; modes: string[]; anchor: { start: string; end: string } | null | "any" }

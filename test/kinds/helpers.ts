@@ -3,12 +3,12 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import type { TemporalIntent } from "../../freshtime-core/index.ts";
-import { discoverSources, ingestPaths } from "../../freshtime-agnt/ledger.ts";
+import type { TemporalIntent } from "../../dozentimes-core/index.ts";
+import { discoverSources, ingestPaths } from "../../dozentimes-agnt/ledger.ts";
 import { checkoutAt, genHistory } from "./gen-history.ts";
 import type { HistorySpec } from "./gen-history.ts";
 
-process.env.FRESHTIME_JEV = "off";
+process.env.DOZENTIMES_JEV = "off";
 
 export const data = <T = any>(kind: string, file = "history.json"): T =>
   JSON.parse(readFileSync(new URL(`./data/${kind}/${file}`, import.meta.url), "utf8"));

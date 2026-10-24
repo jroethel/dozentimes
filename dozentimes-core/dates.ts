@@ -17,5 +17,5 @@ export const addDays = (s: string, n: number): string => {
   return isoDate(d);
 };
 
-// FRESHTIME_NOW pins the clock for tests and replays.
-export const today = (): string => process.env.FRESHTIME_NOW ?? isoDate(new Date());
+// DOZENTIMES_NOW pins the clock for tests and replays.
+export const today = (): string => process.env.DOZENTIMES_NOW ?? isoDate(new Date());

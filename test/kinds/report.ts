@@ -1,7 +1,7 @@
 // Coverage matrix for the twelve kinds: node:test events grouped by test file.
 import { run } from "node:test";
 import { basename } from "node:path";
-import { KINDS } from "../../freshtime-core/contract.ts";
+import { KINDS } from "../../dozentimes-core/contract.ts";
 
 const files = KINDS.map((k) => new URL(`./${k}.test.ts`, import.meta.url).pathname);
 const rows: Record<string, { pass: number; todo: number; fail: number; why: string[] }> =

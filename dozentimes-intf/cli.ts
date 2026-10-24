@@ -1,6 +1,6 @@
-// node freshtime-intf/cli.ts "<question>" ["<follow-up>" ...]  - parses in order, carrying the session.
-import { today } from "../freshtime-core/dates.ts";
-import type { Session } from "../freshtime-core/contract.ts";
+// node dozentimes-intf/cli.ts "<question>" ["<follow-up>" ...]  - parses in order, carrying the session.
+import { today } from "../dozentimes-core/dates.ts";
+import type { Session } from "../dozentimes-core/contract.ts";
 import { describeIntent, parseIntent } from "./intent.ts";
 
 async function main() {

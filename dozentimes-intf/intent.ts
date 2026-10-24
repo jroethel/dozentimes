@@ -2,11 +2,11 @@
 // Code does all date arithmetic. Jev only selects labels (mode, which candidate, keep-vs-replace).
 import * as chrono from "chrono-node";
 import type { DatabaseSync } from "node:sqlite";
-import { addDays, isoDate, parseIso } from "../freshtime-core/dates.ts";
-import { askJev, jevEnabled } from "../freshtime-core/jev.ts";
-import type { JevAnswer, JevQuestion } from "../freshtime-core/jev.ts";
-import { trace } from "../freshtime-core/trace.ts";
-import type { Anchor, AsOfMode, Basis, Kind, Session, TemporalIntent } from "../freshtime-core/contract.ts";
+import { addDays, isoDate, parseIso } from "../dozentimes-core/dates.ts";
+import { askJev, jevEnabled } from "../dozentimes-core/jev.ts";
+import type { JevAnswer, JevQuestion } from "../dozentimes-core/jev.ts";
+import { trace } from "../dozentimes-core/trace.ts";
+import type { Anchor, AsOfMode, Basis, Kind, Session, TemporalIntent } from "../dozentimes-core/contract.ts";
 
 interface Cand { text: string; start: string; end: string }
 type Result = { intent: TemporalIntent; session: Session };

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Learning Guide - freshtime pi-time POC (2026-10-21 to 2026-10-22)</title>
+<title>Learning Guide - dozentimes pi-time POC (2026-10-21 to 2026-10-22)</title>
 <style>
 :root {
   --ink: #2b2b2b; --muted: #6b6b60; --accent: #4a6b57;
@@ -37,16 +37,16 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </head>
 <body>
 <h1>Learning Guide</h1>
-<p class="subtitle">freshtime pi-time proof of concept, build session 2026-10-21 to 2026-10-22, branch <code>feat/pi-time-poc</code></p>
+<p class="subtitle">dozentimes pi-time proof of concept, build session 2026-10-21 to 2026-10-22, branch <code>feat/pi-time-poc</code></p>
 
 <h2>1. Project summary and scope</h2>
 <section class="card">
 <dl>
 <dt>Two time tools share one contract, and pi-time runs both inside pi.</dt>
-<dd><code>freshtime-intf</code> turns a question plus conversation state into a <code>TemporalIntent</code> (as-of mode, anchor, basis). <code>freshtime-agnt</code> is a freshness ledger of dated facts with a volatility class, last-verified date and status. <code>freshtime-core</code> holds the contract, SQLite schema, traces and Jev client. <code>./pi-time/pi-time</code> launches pi with its own agent dir and the <code>freshtime</code> extension.</dd>
+<dd><code>dozentimes-intf</code> turns a question plus conversation state into a <code>TemporalIntent</code> (as-of mode, anchor, basis). <code>dozentimes-agnt</code> is a freshness ledger of dated facts with a volatility class, last-verified date and status. <code>dozentimes-core</code> holds the contract, SQLite schema, traces and Jev client. <code>./pi-time/pi-time</code> launches pi with its own agent dir and the <code>dozentimes</code> extension.</dd>
 <dd class="why">The design is the "Two tools, one contract" sketch from research/memory-systems-oct2026/time-coverage.html, built backwards from a test.</dd>
 <dt>The ledger reads Jeremy's own project docs and keeps the result outside the repo.</dt>
-<dd>Sources are <code>whats_next.md</code>, <code>HANDOFF.md</code>, <code>docs/handoffs/*.md</code> and <code>learning_guide*.html</code> under <code>~/create</code> and <code>~/repos</code>. The ledger lives at <code>~/.freshtime/ledger.db</code>.</dd>
+<dd>Sources are <code>whats_next.md</code>, <code>HANDOFF.md</code>, <code>docs/handoffs/*.md</code> and <code>learning_guide*.html</code> under <code>~/create</code> and <code>~/repos</code>. The ledger lives at <code>~/.dozentimes/ledger.db</code>.</dd>
 <dd class="why">The repo stays public at Jeremy's choice, so no extracted fact, session transcript or auth link may enter git.</dd>
 </dl>
 </section>
@@ -66,7 +66,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 <dd>State-like sections (State, Next step, Recent artifacts, Open ...) in a later-dated handoff of the same project replace that section in earlier handoffs. Within one file, an earlier same-day <code>Next:</code> line is replaced by a later one.</dd>
 <dd class="why">Before this rule, 0 of 809 real facts were ever replaced, because real handoffs use section headings where the rule only knew <code>Next:</code> lines. After it, 48 were.</dd>
 <dt>Every Jev failure is loud.</dt>
-<dd>A failed call writes a trace row with the error, the status line shows <code>jev FALLBACK n</code>, and <code>/freshtime trace</code> shows the row as ERROR. The answer still arrives on the fallback path.</dd>
+<dd>A failed call writes a trace row with the error, the status line shows <code>jev FALLBACK n</code>, and <code>/dozentimes trace</code> shows the row as ERROR. The answer still arrives on the fallback path.</dd>
 <dd class="why">Checked on 2026-10-22 by launching pi-time with a bad <code>TYPESAFE_API_KEY</code>.</dd>
 </dl>
 </section>
@@ -137,7 +137,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 <dt>In the TUI, never mirror extension output to stderr.</dt>
 <dd>Stderr lines tear the pi screen. The extension writes to stderr only when <code>ctx.hasUI</code> is false.</dd>
 <dt>Test the first run on a throwaway ledger so the real first run stays a first run.</dt>
-<dd>Every E2E used <code>FRESHTIME_DB</code> in <code>$TMPDIR</code>. <code>~/.freshtime</code> does not exist yet.</dd>
+<dd>Every E2E used <code>DOZENTIMES_DB</code> in <code>$TMPDIR</code>. <code>~/.dozentimes</code> does not exist yet.</dd>
 <dt>pi rewrites its settings file.</dt>
 <dd>pi adds <code>lastChangelogVersion</code> to <code>pi-time/agent/settings.json</code>, so the committed copy includes it.</dd>
 <dt>A herdr side pane is the closest thing to Jeremy's own first run.</dt>
@@ -163,7 +163,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 <dt>The 7-day status shelf life is too short on real data.</dt>
 <dd>The replay with Jev classes found 4,672 status facts flagged and 14% of them changed in git. The share changed was 7% at 0 to 7 days and 35% at 31 to 90 days. The data is on issue #4.</dd>
 <dt>Test runs must not leave a ledger in the user's home.</dt>
-<dd>During the worker runs something created <code>~/.freshtime/ledger.db</code> with the real corpus (most likely a pi run without <code>FRESHTIME_DB</code>, not traced). It was deleted so Jeremy's first run is still a first run.</dd>
+<dd>During the worker runs something created <code>~/.dozentimes/ledger.db</code> with the real corpus (most likely a pi run without <code>DOZENTIMES_DB</code>, not traced). It was deleted so Jeremy's first run is still a first run.</dd>
 </dl>
 </section>
 
@@ -192,7 +192,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 <section class="card">
 <dl>
 <dt>Six issues closed through one serial plan, with the decisions D1 to D16 recorded as they were taken.</dt>
-<dd>Issues #3, #4, #5, #6, #7 and #12 ran as eight serial tasks in <code>docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md</code>, every task touching <code>freshtime-agnt/ledger.ts</code>, each ending in <code>npm test</code> with <code>fail 0</code>.</dd>
+<dd>Issues #3, #4, #5, #6, #7 and #12 ran as eight serial tasks in <code>docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md</code>, every task touching <code>dozentimes-agnt/ledger.ts</code>, each ending in <code>npm test</code> with <code>fail 0</code>.</dd>
 <dt>D1, Jeremy: rule (d) applies only between handoffs that share a slug, or where the later one names the earlier file.</dt>
 <dd>All 1842 unique rule (d) cases in the 2026-10-22 replay crossed into a different file with a different slug, and project-wide (d) let one task's State close another task's.</dd>
 <dt>D2, planner: same-day order comes from the naming reference, not file mtime, and same slug plus same date never replaces.</dt>
@@ -227,6 +227,16 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
-<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8), the video session (section 9) and the ledger issues chain (section 10). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
+<h2>11. Updates - the rename to dozentimes (2026-10-24)</h2>
+<section class="card">
+<dl>
+<dt>A project rename touches state outside the repo, not just text.</dt>
+<dd>The ledger keys facts by absolute <code>source_path</code> and takes <code>project</code> from the folder name, so moving the folder alone would have ingested this repo's facts a second time. The ledger rows, the git worktrees under <code>~/.dozentimes/worktrees/</code> and the installed <code>~/.local/bin/pi-time</code> launcher moved with the repo.</dd>
+<dt>Renaming the product exposed a doubled tagline in the film.</dt>
+<dd>A Dozen Times ends on "Now I've told you a dozen times." and then the product mark, which now reads "dozentimes". The films were left unrendered, and issue #15 holds the rewrite.</dd>
+</dl>
+</section>
+
+<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8), the video session (section 9) and the ledger issues chain (section 10), and on 2026-10-24 with the rename to dozentimes (section 11). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
 </body>
 </html>

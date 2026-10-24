@@ -5,10 +5,10 @@ import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, utimesSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { openDb, parseIso } from "../freshtime-core/index.ts";
-import type { LedgerFact, Session, TemporalIntent } from "../freshtime-core/index.ts";
-import { discoverSources, ingestPaths, readFacts } from "../freshtime-agnt/ledger.ts";
-import { parseIntent } from "../freshtime-intf/intent.ts";
+import { openDb, parseIso } from "../dozentimes-core/index.ts";
+import type { LedgerFact, Session, TemporalIntent } from "../dozentimes-core/index.ts";
+import { discoverSources, ingestPaths, readFacts } from "../dozentimes-agnt/ledger.ts";
+import { parseIntent } from "../dozentimes-intf/intent.ts";
 
 const FIX = fileURLToPath(new URL("./fixtures/ablation/", import.meta.url));
 const plan = JSON.parse(readFileSync(join(FIX, "edits.json"), "utf8"));
@@ -90,7 +90,7 @@ export async function runAll(jev = false, cold = false) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const jev = process.argv.includes("--jev");
   const cold = process.argv.includes("--cold");
-  if (!jev) process.env.FRESHTIME_JEV = "off";
+  if (!jev) process.env.DOZENTIMES_JEV = "off";
   const { rows, totals: t } = await runAll(jev, cold);
   const pct = (x: number) => `${Math.round(x * 100)}%`.padStart(5);
   console.log(`intf path: ${jev ? "jev" : "fallback"}, ledger: ${cold ? "cold per question" : "carried through the script"}\n`);

@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
 export const defaultDbPath = (): string =>
-  process.env.FRESHTIME_DB ?? join(homedir(), ".freshtime", "ledger.db");
+  process.env.DOZENTIMES_DB ?? join(homedir(), ".dozentimes", "ledger.db");
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS facts (

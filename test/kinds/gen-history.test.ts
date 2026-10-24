@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkoutAt, genHistory } from "./gen-history.ts";
-import { isoDate } from "../../freshtime-core/dates.ts";
+import { isoDate } from "../../dozentimes-core/dates.ts";
 
 const spec = {
   commits: [
@@ -20,7 +20,7 @@ test("genHistory sets commit dates, author, mtimes and clone", () => {
   const out = mkdtempSync(join(tmpdir(), "ft-gen-"));
   const { repo, clone } = genHistory(spec, out);
   const log = execFileSync("git", ["log", "--format=%an|%as|%cs", "--reverse"], { cwd: repo, encoding: "utf8" }).trim().split("\n");
-  assert.deepEqual(log, ["freshtime-test|2026-09-01|2026-09-01", "freshtime-test|2026-09-10|2026-09-10"]);
+  assert.deepEqual(log, ["dozentimes-test|2026-09-01|2026-09-01", "dozentimes-test|2026-09-10|2026-09-10"]);
   assert.equal(isoDate(statSync(join(repo, "p/a.md")).mtime), "2026-08-01");
   assert.equal(readFileSync(join(clone!, "p/a.md"), "utf8"), "two\n");
   assert.equal(isoDate(statSync(join(clone!, "p/a.md")).mtime), isoDate(new Date()));

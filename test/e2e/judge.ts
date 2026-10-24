@@ -1,5 +1,5 @@
 // One batched Jev request per turn: must tags, harmful tags, and the stated-time question.
-import { askJev } from "../../freshtime-core/jev.ts";
+import { askJev } from "../../dozentimes-core/jev.ts";
 
 export interface Judged { must: Record<string, number>; harmful: Record<string, number>; stated: number; ms: number; tokens: number }
 

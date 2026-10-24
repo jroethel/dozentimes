@@ -1,12 +1,12 @@
 // Suite 3: real pi (glm-5.3, RPC mode) through pi-time over a temp copy of the ablation fixtures.
 // The statement turns from statements.json follow the questions in the same conversation (issue #3).
-// Usage: npm run e2e -- [--runs N] [--fallback] [--keep]. Output goes under $TMPDIR/freshtime-e2e/, never the repo.
+// Usage: npm run e2e -- [--runs N] [--fallback] [--keep]. Output goes under $TMPDIR/dozentimes-e2e/, never the repo.
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { openDb, parseIso } from "../../freshtime-core/index.ts";
-import { discoverSources, ingestPaths } from "../../freshtime-agnt/ledger.ts";
+import { openDb, parseIso } from "../../dozentimes-core/index.ts";
+import { discoverSources, ingestPaths } from "../../dozentimes-agnt/ledger.ts";
 import { judge } from "./judge.ts";
 import type { Judged } from "./judge.ts";
 import { startPi } from "./pi.ts";
@@ -57,7 +57,7 @@ async function once(n: number, out: string) {
   const raw = join(out, `run${n}.events.jsonl`);
   const pi = await startPi({
     cwd: work, sessionDir: join(dir, "sessions"), raw,
-    env: { FRESHTIME_DB: db, FRESHTIME_ROOTS: work, FRESHTIME_NOW: plan.now, FRESHTIME_TRACE_FILE: trace, ...(fallback ? { TYPESAFE_API_KEY: "bad" } : {}) },
+    env: { DOZENTIMES_DB: db, DOZENTIMES_ROOTS: work, DOZENTIMES_NOW: plan.now, DOZENTIMES_TRACE_FILE: trace, ...(fallback ? { TYPESAFE_API_KEY: "bad" } : {}) },
   });
   for (const e of plan.edits) { appendFileSync(join(work, e.file), e.append); stamp(join(work, e.file), e.at); }
   const turns: Turn[] = [];
@@ -77,7 +77,7 @@ async function once(n: number, out: string) {
     const text = msgs.length ? (msgs[msgs.length - 1].content as any[]).filter((c) => c.type === "text").map((c) => c.text).join("\n").trim() : "";
     const cost = msgs.reduce((a, m) => a + (m.usage?.cost?.total ?? 0), 0);
     const tokens = msgs.reduce((a, m) => a + (m.usage?.totalTokens ?? 0), 0);
-    const facts: { text: string; status: string; source_path?: string }[] = tools.filter((t) => t.name === "freshtime_ask").flatMap((t: any) => t.r?.details?.facts ?? []);
+    const facts: { text: string; status: string; source_path?: string }[] = tools.filter((t) => t.name === "dozentimes_ask").flatMap((t: any) => t.r?.details?.facts ?? []);
     return { error, tl, reading, asks, tools, text, cost, tokens, facts };
   };
   const push = (id: string, q: string, a: Awaited<ReturnType<typeof ask>>, checks: Turn["checks"], judged: Turn["judged"]): void => {
@@ -86,7 +86,7 @@ async function once(n: number, out: string) {
   for (const q of questions) {
     const a = await ask(q.q);
     const g = gold[q.id];
-    const called = a.tools.some((t) => t.name === "freshtime_ask");
+    const called = a.tools.some((t) => t.name === "dozentimes_ask");
     const rd = a.reading && a.reading.asof_mode === g.asof_mode && (a.reading.anchor?.start ?? null) === g.anchor && (g.basis === null || a.reading.basis === g.basis);
     const factsOk = Object.entries(q.must).every(([tag, ok]) => a.facts.some((f) => f.text.toLowerCase().includes(tag.toLowerCase()) && ok.includes(f.status)));
     let judged: Turn["judged"] = null;
@@ -115,7 +115,7 @@ async function once(n: number, out: string) {
     } else {
       // must_from_record: judged on the conversation fact the named turn recorded, which exists in no fixture file
       const g = s.gold!;
-      const called = a.tools.some((t) => t.name === "freshtime_ask");
+      const called = a.tools.some((t) => t.name === "dozentimes_ask");
       const rd = a.reading && a.reading.asof_mode === g.asof_mode && (a.reading.anchor?.start ?? null) === g.anchor && (g.basis === null || a.reading.basis === g.basis);
       const factsOk = a.facts.some((f) => f.source_path?.startsWith("conversation:") && f.status === "current");
       const newText = recorded[s.must_from_record!] ?? null;
@@ -155,7 +155,7 @@ async function once(n: number, out: string) {
   return { turns, traces: fb, stderr: pi.stderr().slice(-2000) };
 }
 
-const out = join(process.env.TMPDIR ?? tmpdir(), "freshtime-e2e", new Date().toISOString().replace(/[:.]/g, "-") + (fallback ? "-fallback" : ""));
+const out = join(process.env.TMPDIR ?? tmpdir(), "dozentimes-e2e", new Date().toISOString().replace(/[:.]/g, "-") + (fallback ? "-fallback" : ""));
 mkdirSync(out, { recursive: true });
 const results = [];
 for (let n = 1; n <= runs; n++) results.push(await once(n, out));

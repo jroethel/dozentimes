@@ -35,7 +35,7 @@ Times are seconds. LT is local time inside the scene.
 | 43.3 - 47.5| 10 INTENDED | When should it become true?       | "remind me next week to check the importer" types; an arc leaps from NOW (Thu Oct 8) into the NEXT WEEK block, landing as a chip; the only kind right of now |
 | 47.5 - 51.7| 11 BUSINESS | Which calendar is it?             | A 12-month ring rotates July to the top; fiscal quarter arcs re-grid; FY26 = JUL 2025 - JUN 2026 in the center |
 | 51.7 - 55.9| 12 AS-OF   | Which now are we reading in?       | "As of Oct 14, what was the plan?" winds the dial to OCT 14; "and for beta?" inherits it; "now" clears the dial to LIVE |
-| 55.9 - 60.0| OUTRO      | One question. Twelve answers.      | The twelve kinds fly into a 3x4 grid, each in its accent; "each one proven, not named - test/kinds"; freshtime mark |
+| 55.9 - 60.0| OUTRO      | One question. Twelve answers.      | The twelve kinds fly into a 3x4 grid, each in its accent; "each one proven, not named - test/kinds"; dozentimes mark |
 
 ## Provenance
 

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../../freshtime-core/index.ts";
-import { maintain, readFacts } from "../../freshtime-agnt/ledger.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import { maintain, readFacts } from "../../dozentimes-agnt/ledger.ts";
 import { build, fact, ingestDir } from "./helpers.ts";
 
 test("maintain with budget 1 checks the recently read stale fact first", async () => {

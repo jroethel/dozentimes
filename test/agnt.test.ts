@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDb } from "../freshtime-core/index.ts";
-import type { TemporalIntent } from "../freshtime-core/index.ts";
-import { extractFacts, ingestFile, ingestPaths, discoverSources, readFacts, verifyFact, maintain, classify } from "../freshtime-agnt/ledger.ts";
+import { openDb } from "../dozentimes-core/index.ts";
+import type { TemporalIntent } from "../dozentimes-core/index.ts";
+import { extractFacts, ingestFile, ingestPaths, discoverSources, readFacts, verifyFact, maintain, classify } from "../dozentimes-agnt/ledger.ts";
 
-process.env.FRESHTIME_JEV = "off";
+process.env.DOZENTIMES_JEV = "off";
 const tmp = () => mkdtempSync(join(tmpdir(), "ft-agnt-"));
 const write = (dir: string, rel: string, body: string) => {
   const p = join(dir, rel);

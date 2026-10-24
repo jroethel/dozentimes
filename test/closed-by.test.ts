@@ -4,10 +4,10 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { openDb } from "../freshtime-core/index.ts";
-import { ingestFile, ingestPaths, verifyFact } from "../freshtime-agnt/ledger.ts";
+import { openDb } from "../dozentimes-core/index.ts";
+import { ingestFile, ingestPaths, verifyFact } from "../dozentimes-agnt/ledger.ts";
 
-process.env.FRESHTIME_JEV = "off";
+process.env.DOZENTIMES_JEV = "off";
 const tmp = () => mkdtempSync(join(tmpdir(), "ft-closed-"));
 const write = (dir: string, rel: string, body: string) => {
   const p = join(dir, rel);

@@ -1,17 +1,17 @@
-# whats_next - freshtime pi-time POC
+# whats_next - dozentimes pi-time POC
 
 Started 2026-10-21 on branch `feat/pi-time-poc`.
-Goal: a working pi-time proof of concept with two tools, `freshtime-intf` (temporal intent) and `freshtime-agnt` (freshness ledger), sharing `freshtime-core`, plus an isolated pi environment `pi-time` that uses both.
+Goal: a working pi-time proof of concept with two tools, `dozentimes-intf` (temporal intent) and `dozentimes-agnt` (freshness ledger), sharing `dozentimes-core`, plus an isolated pi environment `pi-time` that uses both.
 
 ## Decisions from Jeremy (2026-10-21)
-- Repo stays public (jroethel/freshtime).
+- Repo stays public (jroethel/dozentimes).
 - Push the feature branch and file remaining work as `agent:todo` issues without asking. No merge to main.
 - Demo data: his real project docs under ~/create and ~/repos (learning guides, whats_next.md, handoffs).
 - Jev live with deterministic fallback, pi-time model zai glm-5.3.
 
 ## Guardrail that follows from "public repo" + "real docs"
 - No extracted personal facts, ledger databases, or copied doc text enter git.
-- The ledger DB lives in `~/.freshtime/` (outside the repo).
+- The ledger DB lives in `~/.dozentimes/` (outside the repo).
 - Test fixtures are synthetic files that imitate the real formats.
 
 ## Working definition of 1+1=3
@@ -31,9 +31,9 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - [x] Research notes in docs/research/ (Jev API, pi extensions), corpus survey.
 - [x] core, intf, agnt, ablation test, pi-time extension. `npm test` 20/20.
 - [x] Ablation (fallback and Jev paths): both 100% right status and 0 harm. Status gains add (interaction 0), harm falls superadditively (interaction -2), cold re-reads 9 vs 24.
-- [x] Interactive E2E in a herdr pane on a throwaway ledger: past as-of, inherited follow-up, now question with 7 re-checks, /freshtime and /freshtime trace.
+- [x] Interactive E2E in a herdr pane on a throwaway ledger: past as-of, inherited follow-up, now question with 7 re-checks, /dozentimes and /dozentimes trace.
 - [x] Remaining work filed as GitHub issues #1-#11. pi-time lists them at startup.
-- Next: Jeremy runs `./pi-time/pi-time` for the first real ledger build (~/.freshtime/ledger.db does not exist yet, so the first run builds it, about 13 seconds).
+- Next: Jeremy runs `./pi-time/pi-time` for the first real ledger build (~/.dozentimes/ledger.db does not exist yet, so the first run builds it, about 13 seconds).
 
 ## Judgment calls (reversible)
 - One language (TypeScript on Node 26), because pi extensions run in-process. No Python or Rust.
@@ -58,7 +58,7 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - [x] Jev probe (`npm run probe`, 21 contrived questions): traps worded to fool the rules score rules 0/10, Jev alone 9/10. The keyword "now" guard had thrown away three of Jev's right answers (combined 6/10). Changed: on the Jev path, "about right now?" is Jev's own judgment, not a keyword. Combined is now 9/10. score.ts, ablation --jev and e2e 14/14 unchanged.
 - Known Jev weakness: it reads "next step" as future at 0.9 confidence while its own now judgment says now (0.8). The combine uses the now judgment.
 - Contract gap: a past with no date ("before the launch", "back when we used Postgres") has no anchor, so it reads as now. Filed.
-- [x] Design explanation: docs/design/freshtime-design/ (HTML and 16-page PDF, elucid-flow), content master and claims ledger in docs/content/freshtime-design/. Known layout gap: PDF page 2 is mostly empty because Fig 1 is kept whole.
+- [x] Design explanation: docs/design/dozentimes-design/ (HTML and 16-page PDF, elucid-flow), content master and claims ledger in docs/content/dozentimes-design/. Known layout gap: PDF page 2 is mostly empty because Fig 1 is kept whole.
 - [x] Fallback path regression from the Jev combine change fixed ("Will the importer ship?" after a stated as-of read as inherited instead of future). Fallback e2e 7/7.
 - Next: the open issues (#3 to #7, #12, #13 idea) in a fresh session, gated by npm test, npm run probe, npm run e2e and npm run replay. #1 waits on Jeremy's blind questions.
 
@@ -75,7 +75,7 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 ## 2026-10-22 ledger issues plan (#3 to #7, #12)
 - Asked: a plan for #3, #4, #5, #6, #7 and #12, in a form Rubix review can run on.
   #1 and #13 are held, and #13's schema feeds #1's blind set.
-- Plan: docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md, eight serial tasks, all on freshtime-agnt/ledger.ts.
+- Plan: docs/plans/2026-10-22.I3.I4.I5.I6.I7.I12.ledger-issues-plan.md, eight serial tasks, all on dozentimes-agnt/ledger.ts.
 - Decided by Jeremy: rule (d) replaces only within a shared slug or when the later handoff names the earlier one (#12).
 - Every test in the plan was run against HEAD f87a374 and behaves as its task predicts, except Task 4's one-word guard, which needs Task 1's closed_by column first.
 - The e2e statement wording was checked offline with the fallback parser: s2 needs "today", or it inherits q7's Sep 30 as-of.
@@ -90,7 +90,7 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 ## 2026-10-22 pi-time on main, chain start
 - Decided by Jeremy: pi-time must not live only on a branch, because it is the tool that tests branches before they merge.
 - main was fast-forwarded to f87a374 (the POC without the ledger plan commits) and pushed, with 3242595 on top: the branch launcher `pi-time/pi-time-branch` and the brief `docs/briefs/2026-10-22.I3.ledger-issues-brief.md`.
-- The launcher is installed as `~/.local/bin/pi-time`: `pi-time` runs main with the real ledger, `pi-time --branch <b>` runs a branch from a detached worktree under `~/.freshtime/worktrees/` with its own ledger under `~/.freshtime/branches/`.
+- The launcher is installed as `~/.local/bin/pi-time`: `pi-time` runs main with the real ledger, `pi-time --branch <b>` runs a branch from a detached worktree under `~/.dozentimes/worktrees/` with its own ledger under `~/.dozentimes/branches/`.
 - This branch now differs from main only by the ledger plan commits, so the chain drives it: the ownership gate passes with 2 changed files.
 - The plan's "no merge to main" line predates this, and the chain's merge card is now the normal review step, decided by Jeremy when it comes up.
 - Next: Jeremy runs `pi-time` once for the first real ledger build on main, and the chain runs the ledger plan from Task 1.
@@ -102,7 +102,7 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Rule (e) is inert on today's real corpus: 0 status-family bullets in the 313 current handoff, HANDOFF and whats_next files scanned at the T3 gate.
 - `npm test` at the tip: tests 92, pass 85, fail 0, todo 7, from tests 63, pass 52, fail 0, todo 11 before Task 1.
 - E2E with the new statement turns: 27 of 27 turns over 3 runs, with s1 and s2 passing 3 of 3 each, and the fallback run answering 9 of 9 turns.
-- The probe is unchanged from the pre-plan baseline at 17 of 21 combined, as expected, because no task touches `freshtime-intf/`.
+- The probe is unchanged from the pre-plan baseline at 17 of 21 combined, as expected, because no task touches `dozentimes-intf/`.
 - Open: checkpoint D, where Jeremy runs `./pi-time/pi-time` on his real docs, tells it one fact changed, asks about it, then says the old fact still holds.
 - The driver also files the D6 follow-up at checkpoint D: a later doc edit should be able to close a conversation fact.
 - #3 stays open until checkpoint D; #4, #5, #6, #7 and #12 are closed.
@@ -111,7 +111,16 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Checkpoint D passed and #3 is closed, so #3 to #7 and #12 are all closed.
 - main was fast-forwarded to cez/828d1c94 (782de22) and pushed.
 - `npm test` on main: tests 92, pass 85, fail 0, todo 7.
-- The real ledger exists at `~/.freshtime/ledger.db`, so the first build is done.
+- The real ledger exists at `~/.dozentimes/ledger.db`, so the first build is done.
 - The cezar worktrees and the `cez/*` and `jrit/chain-I3` branches were removed after the merge.
 - Note: Node lists todo tests whose assertions fail under "failing tests" in the `npm test` summary, though fail is 0.
 - Next: #14 (`agent:todo`), a later doc edit closes the conversation fact it contradicts. #1 waits on Jeremy's blind questions.
+
+## 2026-10-24 renamed freshtime to dozentimes
+- Jeremy chose a full rename: the repo folder `~/create/dozentimes`, the source folders `dozentimes-core/`, `dozentimes-intf/` and `dozentimes-agnt/`, the `DOZENTIMES_*` env vars, the `dozentimes_ask` tool, the `/dozentimes` command, the `pi-time/agent/extensions/dozentimes/` extension, the `~/.dozentimes/` data folder and the GitHub repo `jroethel/dozentimes`.
+- Every tracked text file was rewritten, dated history docs included, and the design PDF was re-rendered (16 pages, as before).
+- The possessive is written "dozentimes'".
+- The films were not re-rendered: #15 rewrites the A Dozen Times ending tagline, which now repeats "dozen times", and then re-renders both films.
+- The ledger's `source_path` and `project` values for this repo were rewritten to the new folder and name, so its facts are not ingested a second time.
+- `npm test`: tests 92, pass 85, fail 0, todo 7, the same as before the rename.
+- Next: #14 (`agent:todo`), and #15 when the tagline is chosen.

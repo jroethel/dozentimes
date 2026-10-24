@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { openDb } from "../../freshtime-core/index.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
 import { build, fact, ingestDir, tmp } from "./helpers.ts";
 
 const setup = async () => {

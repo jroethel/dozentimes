@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-process.env.FRESHTIME_JEV = "off";
+process.env.DOZENTIMES_JEV = "off";
 const { runAll, interaction } = await import("./ablation.ts");
 
 test("both tools together beat either alone on the synthetic script", async () => {

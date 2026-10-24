@@ -4,12 +4,12 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { openDb } from "../freshtime-core/index.ts";
-import type { Volatility } from "../freshtime-core/index.ts";
-import { ingestFile, maintain, reclassify } from "../freshtime-agnt/ledger.ts";
-import type { Classified } from "../freshtime-agnt/ledger.ts";
+import { openDb } from "../dozentimes-core/index.ts";
+import type { Volatility } from "../dozentimes-core/index.ts";
+import { ingestFile, maintain, reclassify } from "../dozentimes-agnt/ledger.ts";
+import type { Classified } from "../dozentimes-agnt/ledger.ts";
 
-process.env.FRESHTIME_JEV = "off";
+process.env.DOZENTIMES_JEV = "off";
 const tmp = () => mkdtempSync(join(tmpdir(), "ft-reclass-"));
 const write = (dir: string, rel: string, body: string) => {
   const p = join(dir, rel);

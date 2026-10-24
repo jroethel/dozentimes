@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { describeIntent, fallbackIntent, parseIntent } from "../freshtime-intf/intent.ts";
-import type { Session } from "../freshtime-core/contract.ts";
+import { describeIntent, fallbackIntent, parseIntent } from "../dozentimes-intf/intent.ts";
+import type { Session } from "../dozentimes-core/contract.ts";
 
 const s0: Session = { now: "2026-10-22", ambient: null };
 
@@ -75,7 +75,7 @@ test("fiscal adds business; inherited range keeps range", () => {
 });
 
 test("parseIntent with jev:false equals fallback and writes a trace", async () => {
-  const { openDb } = await import("../freshtime-core/db.ts");
+  const { openDb } = await import("../dozentimes-core/db.ts");
   const db = openDb(":memory:");
   const r = await parseIntent("What was the plan as of Oct 14?", s0, { jev: false, db });
   assert.equal(r.intent.path, "fallback");

@@ -1,4 +1,4 @@
-// pi-time: freshtime tools, status line and /freshtime command for pi.
+// pi-time: dozentimes tools, status line and /dozentimes command for pi.
 // Imports the repo modules by relative path. Startup never throws.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -8,13 +8,13 @@ import { join, relative } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { Type } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { jevEnabled, openDb, recentTraces, today } from "../../../../freshtime-core/index.ts";
-import type { Session, TemporalIntent } from "../../../../freshtime-core/index.ts";
-import { describeIntent, parseIntent } from "../../../../freshtime-intf/intent.ts";
-import { discoverSources, ingestPaths, maintain, readFacts, recordStatement, summary, verifyFact } from "../../../../freshtime-agnt/ledger.ts";
+import { jevEnabled, openDb, recentTraces, today } from "../../../../dozentimes-core/index.ts";
+import type { Session, TemporalIntent } from "../../../../dozentimes-core/index.ts";
+import { describeIntent, parseIntent } from "../../../../dozentimes-intf/intent.ts";
+import { discoverSources, ingestPaths, maintain, readFacts, recordStatement, summary, verifyFact } from "../../../../dozentimes-agnt/ledger.ts";
 
-const REPO = process.env.FRESHTIME_REPO ?? join(import.meta.dirname, "..", "..", "..", "..");
-const ISSUE_REPO = "jroethel/freshtime";
+const REPO = process.env.DOZENTIMES_REPO ?? join(import.meta.dirname, "..", "..", "..", "..");
+const ISSUE_REPO = "jroethel/dozentimes";
 
 let db: DatabaseSync | null = null;
 let session: Session = { now: today(), ambient: null };
@@ -26,7 +26,7 @@ type Ctx = { ui: { notify(m: string, l?: "info" | "warning" | "error"): void; se
 
 const home = (p: string): string => relative(homedir(), p);
 const roots = (): string[] =>
-  process.env.FRESHTIME_ROOTS ? process.env.FRESHTIME_ROOTS.split(":").filter(Boolean) : [join(homedir(), "create"), join(homedir(), "repos")];
+  process.env.DOZENTIMES_ROOTS ? process.env.DOZENTIMES_ROOTS.split(":").filter(Boolean) : [join(homedir(), "create"), join(homedir(), "repos")];
 
 function out(ctx: Ctx, text: string, level: "info" | "warning" | "error" = "info"): void {
   ctx.ui.notify(text, level);
@@ -42,9 +42,9 @@ function brief(output: unknown): string {
   } catch { return String(output ?? ""); }
 }
 
-// Test hook: FRESHTIME_TRACE_FILE gets one JSON line per turn reading and per freshtime_ask call.
+// Test hook: DOZENTIMES_TRACE_FILE gets one JSON line per turn reading and per dozentimes_ask call.
 const traceLine = (o: object): void => {
-  if (process.env.FRESHTIME_TRACE_FILE) try { appendFileSync(process.env.FRESHTIME_TRACE_FILE, JSON.stringify(o) + "\n"); } catch { /* best effort */ }
+  if (process.env.DOZENTIMES_TRACE_FILE) try { appendFileSync(process.env.DOZENTIMES_TRACE_FILE, JSON.stringify(o) + "\n"); } catch { /* best effort */ }
 };
 
 const need = (): DatabaseSync => {
@@ -100,7 +100,7 @@ function status(ctx: Ctx): void {
     const reading = lastIntent ? describeIntent(lastIntent).replace(/^answering /, "") : "none yet";
     const fb = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE id > ? AND path = 'fallback' AND error IS NOT NULL").get(traceBase) as { n: number }).n;
     const jev = fb ? `jev FALLBACK ${fb}` : jevEnabled() ? "jev ok" : "jev off";
-    ctx.ui.setStatus("freshtime", `ft ${s.total} facts | ${s.byStatus.needs_check} stale | reading: ${reading} | ${jev}`);
+    ctx.ui.setStatus("dozentimes", `ft ${s.total} facts | ${s.byStatus.needs_check} stale | reading: ${reading} | ${jev}`);
   } catch { /* status is best effort */ }
 }
 
@@ -124,8 +124,8 @@ function renderFacts(intent: TemporalIntent | null, res: ReturnType<typeof readF
 }
 
 const askTool = defineTool({
-  name: "freshtime_ask",
-  label: "Freshtime ask",
+  name: "dozentimes_ask",
+  label: "Dozentimes ask",
   description: "Answer a question about the user's projects, plans, status or decisions from the dated fact ledger. Reads the time reference, retrieves facts, re-checks stale ones against their source, and returns each fact with its status.",
   parameters: Type.Object({ question: Type.String({ description: "The user's question, in their words" }) }),
   async execute(_id, params) {
@@ -218,10 +218,10 @@ const recordTool = defineTool({
 
 const guidance = (intent: TemporalIntent): string => [
   "",
-  "## Freshtime reading for this turn",
+  "## Dozentimes reading for this turn",
   `Reading: ${describeIntent(intent)}`,
   `Intent: ${JSON.stringify(intent)}`,
-  "For questions about the user's projects, plans, status or decisions, call freshtime_ask and report each fact with its status.",
+  "For questions about the user's projects, plans, status or decisions, call dozentimes_ask and report each fact with its status.",
   "Say the reading back in one short line (\"Answering as of ...\").",
   "Never present a replaced or needs_check fact as current. For needs_check facts say they could not be confirmed.",
   "When the person says a ledger fact still holds or has changed, call ledger_record with its #id; pass new_text when they gave the new value. If they say you changed the wrong fact, call ledger_record on it with holds true.",
@@ -240,7 +240,7 @@ async function command(args: string, ctx: Ctx): Promise<void> {
   else if (sub === "asof") {
     if (arg === "clear") { session = { ...session, ambient: null }; msg = "session as-of cleared"; }
     else if (/^\d{4}-\d{2}-\d{2}$/.test(arg ?? "")) { session = { ...session, ambient: { start: arg, end: arg, text: arg } }; msg = `session as-of set to ${arg}`; }
-    else msg = "usage: /freshtime asof <YYYY-MM-DD>|clear";
+    else msg = "usage: /dozentimes asof <YYYY-MM-DD>|clear";
   } else if (sub === "trace") msg = traces(Number(arg ?? 10) || 10);
   else {
     const s = summary(d, now);
@@ -265,10 +265,10 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool(queryTool);
   pi.registerTool(verifyTool);
   pi.registerTool(recordTool);
-  pi.registerCommand("freshtime", {
+  pi.registerCommand("dozentimes", {
     description: "Ledger summary. Subcommands: ingest, maintain [n], asof <date>|clear, trace [n]",
     handler: async (args, ctx) => {
-      try { await command(args ?? "", ctx); } catch (e) { out(ctx, `freshtime: ${e instanceof Error ? e.message : String(e)}`, "error"); }
+      try { await command(args ?? "", ctx); } catch (e) { out(ctx, `dozentimes: ${e instanceof Error ? e.message : String(e)}`, "error"); }
     },
   });
 

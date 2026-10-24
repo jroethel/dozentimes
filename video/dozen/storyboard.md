@@ -1,6 +1,6 @@
 # A Dozen Times - storyboard and microscript
 
-A 60-second motion-graphics film on the twelve kinds of time in freshtime's design.
+A 60-second motion-graphics film on the twelve kinds of time in dozentimes' design.
 Each kind gets one question, one real or plainly illustrative example, and about four seconds.
 `src/timeline.ts` holds every time, word and cue below, and the picture and the score both read it.
 
@@ -189,10 +189,10 @@ Each scene lists what is on screen, the action, the transition out, and the soun
 
 ### Outro (54.0 - 60.0)
 
-- On screen: twelve tiles, then the twelve names round a dial, "There.", "Now I've told you a dozen times.", and "freshtime".
+- On screen: twelve tiles, then the twelve names round a dial, "There.", "Now I've told you a dozen times.", and "dozentimes".
 - Action: from 55.0 the hand sweeps once round.
   Each tile turns into its name and a dot in its kind's color as the hand passes.
-  At 56.7 the closing line rises, at 58.1 the freshtime mark appears, and from 59.2 the frame fades to black.
+  At 56.7 the closing line rises, at 58.1 the dozentimes mark appears, and from 59.2 the frame fades to black.
 - Sound: the drums drop out, and a bell replays each kind's note as the hand passes it.
   A deep bell and a D major chord land at 57.0.
 
@@ -234,7 +234,7 @@ The score is normalised in two passes to -14 LUFS with a -1 dBTP ceiling, which 
 | Logical order, not clocks: Lamport, 1978            | Sequence     | attribution             | [4]    |
 | Elevator inspection passed Mar 2024                 | Verification | illustrative            | none   |
 | Files last opened today, last week, 2023            | Access       | illustrative            | none   |
-| Status 7 days, decision 90 days, name never         | Volatility   | freshtime's own rule    | [5]    |
+| Status 7 days, decision 90 days, name never         | Volatility   | dozentimes' own rule    | [5]    |
 | Remind me next Tuesday                              | Intended     | illustrative            | none   |
 | UK tax year starts April 6, a leftover from 1752    | Business     | fact                    | [6]    |
 | How many planets: 9 as of 2005, 8 today             | As-of        | fact                    | [2]    |
@@ -243,8 +243,8 @@ The score is normalised in two passes to -14 LUFS with a -1 dBTP ceiling, which 
 2. Pluto discovered 1930, reclassified August 24, 2006: https://www.smithsonianmag.com/science-nature/once-the-solar-systems-ninth-planet-pluto-was-reclassified-20-years-ago-heres-why-planetary-scientists-and-the-public-alike-love-the-small-icy-body-180989383/
 3. SN 1987A in the Large Magellanic Cloud: https://science.nasa.gov/asset/hubble/supernova-1987a-in-the-large-magellanic-cloud/ (published distances run from about 160,000 to 170,000 light-years, so both figures carry a "~")
 4. Lamport, "Time, Clocks, and the Ordering of Events in a Distributed System", CACM 21(7), 1978: https://amturing.acm.org/p558-lamport.pdf
-5. freshtime's volatility rule: `test/kinds/METHODS.md` (status needs a check after 7 days, decision after 90, identity never).
-   On screen these read as general examples, but they are freshtime's own shelf lives.
+5. dozentimes' volatility rule: `test/kinds/METHODS.md` (status needs a check after 7 days, decision after 90, identity never).
+   On screen these read as general examples, but they are dozentimes' own shelf lives.
 6. Why the UK tax year starts on April 6 (Lady Day, the 11 days dropped in 1752, the 1800 leap-day shift): https://theconversation.com/why-the-uk-tax-year-starts-on-april-6-57247
 7. Kinetic typography trends for 2026: https://www.jumbla.com/news/kinetic-typography-make-your-brand-message-unforgettable
 8. Kinetic typography as a web trend: https://www.digitalsilk.com/web-design/web-trends/kinetic-typography/

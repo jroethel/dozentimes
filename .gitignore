@@ -1,5 +1,5 @@
 node_modules/
-.freshtime/
+.dozentimes/
 *.db
 *.db-*
 pi-time/agent/sessions/

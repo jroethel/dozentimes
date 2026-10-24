@@ -1,5 +1,5 @@
 {
-  "name": "freshtime-video",
+  "name": "dozentimes-video",
   "version": "1.0.0",
   "scripts": {
     "music": "node src/music.ts",

@@ -1,7 +1,7 @@
-// node freshtime-agnt/cli.ts <ingest|summary|query|maintain|trace> [args]
+// node dozentimes-agnt/cli.ts <ingest|summary|query|maintain|trace> [args]
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { openDb, recentTraces, today } from "../freshtime-core/index.ts";
+import { openDb, recentTraces, today } from "../dozentimes-core/index.ts";
 import { discoverSources, ingestPaths, maintain, readFacts, summary } from "./ledger.ts";
 
 const [cmd, ...args] = process.argv.slice(2);

@@ -1,6 +1,6 @@
 # A Dozen Times
 
-A 60-second motion-graphics film on the twelve kinds of time in freshtime's design.
+A 60-second motion-graphics film on the twelve kinds of time in dozentimes' design.
 It opens on "If I've told you once, I've told you a dozen times." and closes on "Now I've told you a dozen times."
 The storyboard, the microscript for every scene and transition, and the sources for every fact are in [storyboard.md](storyboard.md).
 

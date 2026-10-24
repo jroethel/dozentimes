@@ -10,12 +10,12 @@ video and downloads are relative to `out/`).
 
 ## Outputs
 
-| File                                              | What it is                                  |
-| ------------------------------------------------- | ------------------------------------------- |
-| `out/freshtime-twelve-times-1080p.mp4`            | Master: 1080p30 H.264 CRF 16, AAC 320k      |
-| `out/freshtime-twelve-times-social.mp4`           | Same video, CRF 23, for fast uploads        |
-| `out/poster.jpg`                                  | Poster frame (the OCT 14 dial)              |
-| `out/score.wav`                                   | The composed score on its own               |
+| File                                     | What it is                             |
+| ---------------------------------------- | -------------------------------------- |
+| `out/dozentimes-twelve-times-1080p.mp4`  | Master: 1080p30 H.264 CRF 16, AAC 320k |
+| `out/dozentimes-twelve-times-social.mp4` | Same video, CRF 23, for fast uploads   |
+| `out/poster.jpg`                         | Poster frame (the OCT 14 dial)         |
+| `out/score.wav`                          | The composed score on its own          |
 
 ## Rebuild
 

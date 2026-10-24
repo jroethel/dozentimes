@@ -1182,7 +1182,7 @@ function outro(ctx: Ctx, lt: number, frame: number) {
   const a3 = ph(lt, 2.3, 2.8);
   if (a3 > 0) {
     tag(ctx, "each one proven, not named - test/kinds", W / 2, 930, DIM, "center", a3, 23);
-    tag(ctx, "freshtime", W / 2, 986, "rgba(237,234,227,0.4)", "center", a3, 22);
+    tag(ctx, "dozentimes", W / 2, 986, "rgba(237,234,227,0.4)", "center", a3, 22);
   }
 }
 

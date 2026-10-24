@@ -82,7 +82,7 @@ Todo: #8, nothing stores the intent, so no scheduled item exists.
 Method: `fallbackIntent` on fiscal-period questions, checking the kind list, then the anchor with a July 1 fiscal start.
 Data: `data/business/questions.json`.
 A pass proves "FY26" and "Q3 FY26" add the business kind.
-Todo: #9, neither phrase gets an anchor, and the `FRESHTIME_FISCAL_START` knob in the test is a proposed name.
+Todo: #9, neither phrase gets an anchor, and the `DOZENTIMES_FISCAL_START` knob in the test is a proposed name.
 
 ## asof
 

@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../../freshtime-core/index.ts";
-import type { Session } from "../../freshtime-core/index.ts";
-import { parseIntent } from "../../freshtime-intf/intent.ts";
-import { readFacts } from "../../freshtime-agnt/ledger.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import type { Session } from "../../dozentimes-core/index.ts";
+import { parseIntent } from "../../dozentimes-intf/intent.ts";
+import { readFacts } from "../../dozentimes-agnt/ledger.ts";
 import { build, replay, tmp } from "./helpers.ts";
 
 const NOW = "2026-10-22";

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../../freshtime-core/index.ts";
-import { readFacts } from "../../freshtime-agnt/ledger.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import { readFacts } from "../../dozentimes-agnt/ledger.ts";
 import { build, fact, intent, replay, tmp } from "./helpers.ts";
 
 const D1 = "2026-09-10", D2 = "2026-10-01";

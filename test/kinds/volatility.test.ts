@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openDb } from "../../freshtime-core/index.ts";
-import { readFacts, shelfLives, summary } from "../../freshtime-agnt/ledger.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import { readFacts, shelfLives, summary } from "../../dozentimes-agnt/ledger.ts";
 import { build, fact, ingestDir } from "./helpers.ts";
 
 const setup = async () => {

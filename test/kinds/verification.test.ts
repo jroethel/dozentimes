@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
-import { openDb } from "../../freshtime-core/index.ts";
-import * as ledger from "../../freshtime-agnt/ledger.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import * as ledger from "../../dozentimes-agnt/ledger.ts";
 import { build, fact, ingestDir } from "./helpers.ts";
 
 const { readFacts } = ledger;

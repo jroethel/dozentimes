@@ -1,7 +1,7 @@
-// node freshtime-intf/score.ts  - scores the fallback path and the Jev path on test/fixtures/intent-questions.json.
+// node dozentimes-intf/score.ts  - scores the fallback path and the Jev path on test/fixtures/intent-questions.json.
 import { readFileSync } from "node:fs";
-import type { Anchor } from "../freshtime-core/contract.ts";
-import { jevEnabled } from "../freshtime-core/jev.ts";
+import type { Anchor } from "../dozentimes-core/contract.ts";
+import { jevEnabled } from "../dozentimes-core/jev.ts";
 import { parseIntent } from "./intent.ts";
 
 interface Item { question: string; ambient: Anchor | null; asof_mode: string; anchor: { start: string; end: string } | null; basis: string }
@@ -31,4 +31,4 @@ async function score(jev: boolean) {
 
 await score(false);
 if (jevEnabled()) await score(true);
-else console.log("jev: skipped (no TYPESAFE_API_KEY or FRESHTIME_JEV=off)");
+else console.log("jev: skipped (no TYPESAFE_API_KEY or DOZENTIMES_JEV=off)");

@@ -28,7 +28,7 @@ export function genHistory(spec: HistorySpec, outDir: string): { repo: string; c
     git(repo, ["add", "-A"]);
     git(repo, ["commit", "-q", "--allow-empty", "-m", c.message ?? `update ${c.date}`], {
       GIT_AUTHOR_DATE: stamp, GIT_COMMITTER_DATE: stamp,
-      GIT_AUTHOR_NAME: "freshtime-test", GIT_COMMITTER_NAME: "freshtime-test",
+      GIT_AUTHOR_NAME: "dozentimes-test", GIT_COMMITTER_NAME: "dozentimes-test",
       GIT_AUTHOR_EMAIL: "test@example.invalid", GIT_COMMITTER_EMAIL: "test@example.invalid",
     });
   }

@@ -72,7 +72,7 @@ export const SHORT = ["Event", "Valid", "Record", "Source", "Reference", "Sequen
   "Verification", "Access", "Volatility", "Intended", "Business", "As-of"];
 
 export const HOOK_COPY = ["If I've told you once,", "I've told you a dozen times.", "Literally.", "Twelve kinds of time."];
-export const OUTRO_COPY = ["There.", "Now I've told you a dozen times.", "freshtime"];
+export const OUTRO_COPY = ["There.", "Now I've told you a dozen times.", "dozentimes"];
 
 // Transitions: each one is motivated by the kinds on either side of it, and none repeats.
 export interface Trans { name: string; from: number; to: number; a: number; b: number; blur: number }

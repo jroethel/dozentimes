@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fallbackIntent } from "../../freshtime-intf/intent.ts";
-import { openDb } from "../../freshtime-core/index.ts";
-import { readFacts } from "../../freshtime-agnt/ledger.ts";
+import { fallbackIntent } from "../../dozentimes-intf/intent.ts";
+import { openDb } from "../../dozentimes-core/index.ts";
+import { readFacts } from "../../dozentimes-agnt/ledger.ts";
 import { build, data, ingestDir } from "./helpers.ts";
 
 interface Q { q: string; now: string; start: string; end: string }

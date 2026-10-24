@@ -20,7 +20,7 @@ export async function startPi(opts: { cwd: string; sessionDir: string; env: Reco
   if (!existsSync(auth) && existsSync(join(homedir(), ".pi/agent/auth.json"))) symlinkSync(join(homedir(), ".pi/agent/auth.json"), auth);
   const p: ChildProcess = spawn("pi", ["--mode", "rpc", "--no-skills", "--provider", "zai", "--model", "glm-5.3", "--session-dir", opts.sessionDir], {
     cwd: opts.cwd,
-    env: { ...process.env, PI_CODING_AGENT_DIR: AGENT_DIR, FRESHTIME_REPO: REPO, PI_SKIP_VERSION_CHECK: "1", ...opts.env },
+    env: { ...process.env, PI_CODING_AGENT_DIR: AGENT_DIR, DOZENTIMES_REPO: REPO, PI_SKIP_VERSION_CHECK: "1", ...opts.env },
     stdio: ["pipe", "pipe", "pipe"],
   });
   let err = "";

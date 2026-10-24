@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# pi-time: pi with the freshtime tools, in its own agent dir.
+# pi-time: pi with the dozentimes tools, in its own agent dir.
 # Usage: ./pi-time/pi-time [pi args...]   (run from any directory)
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PI_CODING_AGENT_DIR="$here/agent"
-export FRESHTIME_REPO="$(dirname "$here")"
+export DOZENTIMES_REPO="$(dirname "$here")"
 
 # Share the user's pi login without copying it into the repo (the link is gitignored).
 if [ ! -e "$PI_CODING_AGENT_DIR/auth.json" ] && [ -f "$HOME/.pi/agent/auth.json" ]; then
@@ -14,8 +14,8 @@ fi
 if [ ! -e "$PI_CODING_AGENT_DIR/bin/fd" ] && [ -x "$HOME/.pi/agent/bin/fd" ]; then
   mkdir -p "$PI_CODING_AGENT_DIR/bin" && ln -s "$HOME/.pi/agent/bin/fd" "$PI_CODING_AGENT_DIR/bin/fd"
 fi
-if [ ! -d "$FRESHTIME_REPO/node_modules/chrono-node" ]; then
-  (cd "$FRESHTIME_REPO" && npm install --silent)
+if [ ! -d "$DOZENTIMES_REPO/node_modules/chrono-node" ]; then
+  (cd "$DOZENTIMES_REPO" && npm install --silent)
 fi
 # --no-skills keeps the shared ~/.agents skills out, so pi-time stays about time.
 exec pi --no-skills "$@"

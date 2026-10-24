@@ -3,9 +3,9 @@ import type { DatabaseSync } from "node:sqlite";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { basename, dirname, join } from "node:path";
-import type { FactStatus, LedgerFact, TemporalIntent, Volatility } from "../freshtime-core/index.ts";
-import { SHELF_LIFE_DAYS, askJev, daysBetween, isoDate, jevEnabled, trace } from "../freshtime-core/index.ts";
-import type { JevQuestion } from "../freshtime-core/index.ts";
+import type { FactStatus, LedgerFact, TemporalIntent, Volatility } from "../dozentimes-core/index.ts";
+import { SHELF_LIFE_DAYS, askJev, daysBetween, isoDate, jevEnabled, trace } from "../dozentimes-core/index.ts";
+import type { JevQuestion } from "../dozentimes-core/index.ts";
 
 export interface ExtractedFact {
   project: string;

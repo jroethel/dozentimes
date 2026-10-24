@@ -18,7 +18,7 @@ It is not part of `npm test`.
 
 ## Output
 
-Output goes to `~/.freshtime/replay/<YYYY-MM-DD>/report.md` and `results.json`.
+Output goes to `~/.dozentimes/replay/<YYYY-MM-DD>/report.md` and `results.json`.
 The repo is public, so the code holds only the method.
 Reports hold counts and rates, with sources identified by index only.
 No file content, fact text, project name or path is written or printed.

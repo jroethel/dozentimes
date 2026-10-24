@@ -4,10 +4,10 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { openDb } from "../freshtime-core/index.ts";
-import { ingestFile } from "../freshtime-agnt/ledger.ts";
+import { openDb } from "../dozentimes-core/index.ts";
+import { ingestFile } from "../dozentimes-agnt/ledger.ts";
 
-process.env.FRESHTIME_JEV = "off";
+process.env.DOZENTIMES_JEV = "off";
 
 // Rule (d) closes E's State at the earliest handoff that continues E (D16), whatever order the files arrive in.
 const write = (files: Record<string, string>) => {

@@ -14,7 +14,7 @@ const ff = spawn("ffmpeg", [
   "-c:a", "aac", "-b:a", "320k", "-ar", "48000",
   "-af", "loudnorm=I=-14:TP=-1.5:LRA=17:measured_I=-18.22:measured_TP=-2.17:measured_LRA=7.30:measured_thresh=-29.11:linear=true",
   "-shortest", "-movflags", "+faststart",
-  "out/freshtime-twelve-times-1080p.mp4",
+  "out/dozentimes-twelve-times-1080p.mp4",
 ], { stdio: ["pipe", "inherit", "inherit"] });
 
 const canvas = new Canvas(W, H);
