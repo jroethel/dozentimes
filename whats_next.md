@@ -127,6 +127,6 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - `npm test`: tests 92, pass 85, fail 0, todo 7, the same as before the rename.
 - Outside the repo, done once on this machine, and needed on any other machine that pulls main: `mv ~/.freshtime ~/.dozentimes`, `mv ~/create/freshtime ~/create/dozentimes`, `git -C ~/create/dozentimes worktree repair ~/.dozentimes/worktrees/*`, and `install -m 755 pi-time/pi-time-branch ~/.local/bin/pi-time`.
 - The ledger rows were rewritten in `~/.dozentimes/ledger.db` and in the branch ledger, each in one transaction: `facts.source_path` and `sources.path` from `/Users/jjrdar/create/freshtime/` to `/Users/jjrdar/create/dozentimes/`, `conversation:freshtime` to `conversation:dozentimes`, `facts.project` from freshtime to dozentimes, then `INSERT INTO facts_fts(facts_fts) VALUES('rebuild')`.
-- The pre-rename ledger is kept at `~/.dozentimes/ledger.pre-rename-2026-10-24.db` for rollback, and can be deleted once pi-time has run cleanly.
 - Claude Code history was copied to `~/.claude/projects/-Users-jjrdar-create-dozentimes`.
+- The old-path leftovers were deleted: the `~/.claude.json` project entry, the old Claude projects folder, the old pi session folders, and the pre-rename ledger copy.
 - Next: #14 (`agent:todo`), and #15 when the tagline is chosen.
