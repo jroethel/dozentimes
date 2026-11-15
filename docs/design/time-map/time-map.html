@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time Map</title>
+<style>
+:root {
+  --bg: #fbfaf7; --ink: #1d1d1b; --muted: #6b6a66; --rule: #d9d6cf; --cell: #f2f0ea;
+  --intf: #2f62c9; --agnt: #c8641c; --gap: #9a9892;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615; --ink: #ecebe6; --muted: #a3a19b; --rule: #3a3936; --cell: #201f1d;
+    --intf: #7ea2ff; --agnt: #f0964f; --gap: #8a8882;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161615; --ink: #ecebe6; --muted: #a3a19b; --rule: #3a3936; --cell: #201f1d;
+  --intf: #7ea2ff; --agnt: #f0964f; --gap: #8a8882;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 28px; margin: 0 0 4px; }
+h2 { font-size: 20px; margin: 48px 0 4px; }
+p { margin: 8px 0; max-width: 72ch; }
+.muted { color: var(--muted); }
+svg { display: block; width: 100%; height: auto; margin-top: 16px; }
+svg text { fill: var(--ink); font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+svg .axis { fill: var(--muted); font-size: 13px; }
+svg .pole { font-weight: 600; font-size: 14px; }
+.legend { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px; margin-top: 12px; font-size: 14px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; background: var(--c); border: 2px solid var(--c); }
+.legend .hollow::before { background: transparent; }
+table { border-collapse: collapse; width: 100%; margin-top: 16px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+th { color: var(--muted); font-weight: 600; }
+th, td:nth-child(-n+3) { white-space: nowrap; }
+td:first-child { font-weight: 600; }
+.wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+<h1>Time map</h1>
+<p class="muted">The twelve kinds of time in dozentimes, placed by who uses each one and how long its value lasts.</p>
+
+<h2>1. Interface against agentic</h2>
+<p>Left is time that comes from the people in the conversation.
+Right is time the agent's own machinery writes and reads.
+Up is how long a value stands as written, in four bands: redone every turn, carried through one session, stored but rewritten, and written once.
+Both charts use the same bands.</p>
+<svg id="c1" viewBox="0 0 960 620" role="img" aria-label="Scatter of twelve kinds on interface to agentic and ephemeral to durable"></svg>
+<div class="legend">
+  <span style="--c: var(--intf)">value held by dozentimes-intf</span>
+  <span style="--c: var(--agnt)">value held by dozentimes-agnt</span>
+  <span class="hollow" style="--c: var(--muted)">hollow: main piece not built yet</span>
+</div>
+
+<h2>2. Three lanes and four lifespans</h2>
+<p>The agentic side splits into the work agents do behind the scenes and the oversight of that work: traces, evals and audit.
+The lifespan bands from chart 1 become rows.</p>
+<svg id="c2" viewBox="0 0 960 760" role="img" aria-label="Grid of three lanes against four lifespans"></svg>
+<div class="legend">
+  <span style="--c: var(--intf)">dozentimes-intf</span>
+  <span style="--c: var(--agnt)">dozentimes-agnt</span>
+  <span class="hollow" style="--c: var(--gap)">in the code, not one of the twelve</span>
+</div>
+<p>Two things stand out.
+The oversight lane holds only record and verification, though the code already writes two more times there: a row in the <code>traces</code> table for each traced tool call, and a row in the <code>checks</code> table for each re-check (<code>dozentimes-core/db.ts</code>).
+Nothing in the code deletes from either table, so both sit in the written-once row.
+The lower right is empty: no agentic time lives only for a turn or a session, because everything the agent keeps goes into the ledger.</p>
+
+<h2>Placements</h2>
+<p class="muted">Each placement is a judgment call. Change the numbers in the page's data block to move a point.</p>
+<div class="wrap"><table id="t"></table></div>
+</main>
+
+<script>
+// x: -1 interface .. +1 agentic. y: -1 .. +1 in four bands: turn < -0.5 < session < 0 < rewritten < 0.5 < written once.
+// lane: 0 interface, 1 agent work, 2 oversight. life: 0 turn, 1 session, 2 rewritten, 3 written once.
+// cx/cy place the point inside its cell in chart 2 (0..1).
+const K = [
+  { k: "reference", pkg: "intf", x: -0.85, y: -0.8, lane: 0, life: 0, cx: .5, cy: .5,
+    why: "\"Tomorrow\" and \"last week\" resolve against the turn's now, so the value is redone every turn." },
+  { k: "asof", pkg: "intf", x: -0.7, y: -0.25, lane: 0, life: 1, cx: .5, cy: .5,
+    why: "A stated date lives in the Session's ambient anchor and carries until a new period or a \"now\" clears it." },
+  { k: "business", pkg: "intf", x: -0.8, y: 0.62, lane: 0, life: 3, cx: .2, cy: .7, hollow: true,
+    why: "FY26 means the same dates on any day, so the mapping is written once. Anchoring is #9." },
+  { k: "intended", pkg: "intf", x: -0.5, y: 0.72, lane: 0, life: 3, cx: .64, cy: .7, hollow: true,
+    why: "A person's commitment that should be stored. Today it is parsed and dropped (#8), so it sits here as a target." },
+  { k: "event", pkg: "agnt", x: -0.25, y: 0.86, lane: 0, life: 3, cx: .5, cy: .3,
+    why: "People ask about what happened in a period, and the date of a happening never changes." },
+  { k: "valid", pkg: "agnt", x: 0.25, y: 0.8, lane: 1, life: 3, cx: .2, cy: .3,
+    why: "valid_at and invalid_at bound when a fact was true. Set once and closed once, reopened only by a correction." },
+  { k: "source", pkg: "agnt", x: 0.5, y: 0.9, lane: 1, life: 3, cx: .62, cy: .3,
+    why: "source_at is the file's date, used at ingest so an old doc does not look new. No update touches it." },
+  { k: "sequence", pkg: "agnt", x: 0.4, y: 0.6, lane: 1, life: 3, cx: .4, cy: .7,
+    why: "File order breaks same-day ties at ingest. Used by the agent, kept in the outcome." },
+  { k: "volatility", pkg: "agnt", x: 0.6, y: 0.4, lane: 1, life: 2, cx: .3, cy: .35,
+    why: "Shelf life per class decides needs_check. Hand-set, refitted from checks once 30 exist." },
+  { k: "access", pkg: "agnt", x: 0.72, y: 0.08, lane: 1, life: 2, cx: .62, cy: .65,
+    why: "last_accessed_at orders maintenance. Rewritten on every read, so it sits lowest of the stored times." },
+  { k: "verification", pkg: "agnt", x: 0.82, y: 0.25, lane: 2, life: 2, cx: .35, cy: .5,
+    why: "last_verified_at and verified_by say who confirmed a fact and when. Re-stamped on each check." },
+  { k: "record", pkg: "agnt", x: 0.88, y: 0.95, lane: 2, life: 3, cx: .2, cy: .3,
+    why: "recorded_at is when the ledger learned a fact. Never moved by a later ingest, the audit clock." },
+];
+// Times the code keeps for oversight that are not among the twelve (chart 2 only).
+const G = [
+  { k: "trace ts", lane: 2, life: 3, cx: .55, cy: .5 },
+  { k: "check ts", lane: 2, life: 3, cx: .2, cy: .72 },
+];
+const BANDS = ["Turn", "Session", "Rewritten", "Written once"]; // bottom to top
+const LABEL = { // chart 1 label offsets [dx, dy, anchor]
+  reference: [12, 5, "start"], asof: [12, 5, "start"], business: [12, 5, "start"],
+  intended: [12, 5, "start"], event: [12, 5, "start"], valid: [-12, 5, "end"],
+  source: [12, 5, "start"], sequence: [-12, 5, "end"], volatility: [12, 5, "start"],
+  access: [12, 5, "start"], verification: [-12, 5, "end"], record: [-12, 5, "end"],
+};
+
+const NS = "http://www.w3.org/2000/svg";
+const el = (p, tag, a, txt) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(a)) n.setAttribute(k, v);
+  if (txt != null) n.textContent = txt;
+  p.appendChild(n);
+  return n;
+};
+const color = d => d.gap ? "var(--gap)" : d.pkg === "intf" ? "var(--intf)" : "var(--agnt)";
+const dot = (svg, x, y, d) => el(svg, "circle", {
+  cx: x, cy: y, r: 7, "stroke-width": 2.5, stroke: color(d), fill: d.hollow || d.gap ? "var(--bg)" : color(d),
+  "stroke-dasharray": d.gap ? "3 2" : "none",
+});
+
+// Chart 1: continuous two-pole plane, with the four lifespan bands marked.
+{
+  const svg = document.getElementById("c1");
+  const L = 130, R = 900, T = 30, B = 560, W = R - L, H = B - T;
+  const px = x => L + (x + 1) / 2 * W, py = y => B - (y + 1) / 2 * H;
+  el(svg, "rect", { x: L, y: T, width: W, height: H, fill: "var(--cell)" });
+  for (const y of [-0.5, 0.5])
+    el(svg, "line", { x1: L, y1: py(y), x2: R, y2: py(y), stroke: "var(--rule)", "stroke-dasharray": "4 4" });
+  el(svg, "line", { x1: px(0), y1: T, x2: px(0), y2: B, stroke: "var(--rule)", "stroke-width": 1.5 });
+  el(svg, "line", { x1: L, y1: py(0), x2: R, y2: py(0), stroke: "var(--rule)", "stroke-width": 1.5 });
+  BANDS.forEach((s, i) => el(svg, "text", { x: L - 12, y: py(-0.75 + i * 0.5) + 5, class: "axis pole", "text-anchor": "end" }, s));
+  el(svg, "text", { x: 16, y: (T + B) / 2, class: "axis", "text-anchor": "middle", transform: `rotate(-90 16 ${(T + B) / 2})` }, "ephemeral to durable");
+  el(svg, "text", { x: L, y: B + 30, class: "axis pole" }, "Interface");
+  el(svg, "text", { x: R, y: B + 30, class: "axis pole", "text-anchor": "end" }, "Agentic");
+  el(svg, "text", { x: px(0), y: B + 30, class: "axis", "text-anchor": "middle" }, "who uses it");
+  for (const d of K) {
+    const x = px(d.x), y = py(d.y), [dx, dy, a] = LABEL[d.k];
+    dot(svg, x, y, d);
+    el(svg, "text", { x: x + dx, y: y + dy, "text-anchor": a }, d.k);
+  }
+}
+
+// Chart 2: three lanes by four lifespans.
+{
+  const svg = document.getElementById("c2");
+  const L = 130, R = 940, T = 30, B = 700, rows = BANDS.length, cw = (R - L) / 3, ch = (B - T) / rows, pad = 4;
+  const lanes = ["Interface", "Agent work", "Oversight"];
+  const subs = ["human - AI - human", "behind the scenes", "traces, evals, audit"];
+  const top = life => T + (rows - 1 - life) * ch;
+  for (let c = 0; c < 3; c++) for (let r = 0; r < rows; r++)
+    el(svg, "rect", { x: L + c * cw + pad, y: T + r * ch + pad, width: cw - 2 * pad, height: ch - 2 * pad, rx: 6, fill: "var(--cell)" });
+  lanes.forEach((s, c) => {
+    el(svg, "text", { x: L + c * cw + cw / 2, y: B + 26, class: "axis pole", "text-anchor": "middle" }, s);
+    el(svg, "text", { x: L + c * cw + cw / 2, y: B + 46, class: "axis", "text-anchor": "middle" }, subs[c]);
+  });
+  BANDS.forEach((s, life) => el(svg, "text", { x: L - 12, y: top(life) + ch / 2 + 5, class: "axis pole", "text-anchor": "end" }, s));
+  const filled = new Set([...K, ...G].map(d => `${d.lane},${d.life}`));
+  for (let c = 0; c < 3; c++) for (let life = 0; life < rows; life++)
+    if (!filled.has(`${c},${life}`))
+      el(svg, "text", { x: L + c * cw + cw / 2, y: top(life) + ch / 2 + 5, class: "axis", "text-anchor": "middle" }, "no kind here");
+  for (const d of [...K, ...G.map(g => ({ ...g, gap: true }))]) {
+    const x = L + d.lane * cw + d.cx * cw, y = top(d.life) + d.cy * ch;
+    dot(svg, x, y, d);
+    el(svg, "text", { x: x + 12, y: y + 5, fill: d.gap ? "var(--muted)" : "var(--ink)" }, d.k);
+  }
+}
+
+// Placement table.
+{
+  const t = document.getElementById("t");
+  const lanes = ["Interface", "Agent work", "Oversight"];
+  t.innerHTML = "<tr><th>Kind</th><th>Chart 1 (x, y)</th><th>Chart 2</th><th>Why</th></tr>" +
+    K.map(d => `<tr><td>${d.k}</td><td>${d.x}, ${d.y}</td><td>${lanes[d.lane]}, ${BANDS[d.life]}</td><td>${d.why}</td></tr>`).join("");
+}
+</script>
+</body>
+</html>
