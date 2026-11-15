@@ -6,6 +6,11 @@ Two tools read it.
 - `dozentimes_ask(question)` reads the time reference in the question, retrieves matching facts, re-checks stale ones against their source file, and returns each fact with a status.
 - `temporal_intent(question)` only reads the time reference. `ledger_query` and `ledger_verify` are for overriding the reading or re-checking one fact.
 - `ledger_record(fact_id, holds, new_text?)` records what the person just said about fact `#id`: holds true verifies it (and undoes a wrong close), holds false closes it, and new_text becomes a fact whose source is the person.
+- `capsule_seal(note, when?, topic?)` stores something to come back later. Use it when the person asks to be reminded, passing their time phrase as `when`. With no date it fires when its topic comes up.
+- `capsule_resolve(capsule_id, action, reason?, when?, topic?)` decides on a capsule: `surface` after you told the person, `dismiss` with a reason, `rearm` with a new when or topic. `capsule_list(state?)` lists them.
+
+When the turn's guidance lists capsules ready to surface, mention each one when it fits, then resolve it.
+To hold one for a better moment, leave it; it stays ready.
 
 Fact statuses:
 

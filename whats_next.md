@@ -130,3 +130,13 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - Claude Code history was copied to `~/.claude/projects/-Users-jjrdar-create-dozentimes`.
 - The old-path leftovers were deleted: the `~/.claude.json` project entry, the old Claude projects folder, the old pi session folders, and the pre-rename ledger copy.
 - Next: #14 (`agent:todo`), and #15 when the tagline is chosen.
+
+## 2026-11-14 capsules and charge
+- Asked: take back two ideas from the Lume/Mira stack (hearth capsules, mnemodyne charge) after mapping it against the twelve kinds.
+- #8 built: `dozentimes-agnt/capsules.ts` stores intended time as capsules (sealed, fired, surfaced, dismissed). A future intent's anchor is the date trigger, resolved on the day it was said; with no date the capsule fires on its topic words.
+- Firing only moves sealed to fired; surface, dismiss (with a reason) and re-arm are the caller's decision, as in hearth.
+- pi-time gained `capsule_seal`, `capsule_resolve`, `capsule_list` and `/dozentimes capsules`; capsules fire before each turn and ready ones go into the turn's guidance and the status line.
+- #17 filed and built: `dozentimes-agnt/charge.ts` gives each fact a charge raised by each read and halved every 14 days, plus co-read links. `maintain` checks stale facts by charge, and first checks a fact whose co-read companion changed since it was last verified.
+- Kinds suite: access 5 pass, intended 8 pass, no todo left in either. Full suite 96 pass, 6 todo, 0 fail; the ablation table is unchanged.
+- A separate time phrase that has passed is refused; a reminder whose own text names a past date with no future reading becomes a topic capsule about that content.
+- Next: fiscal anchors (#9) would give "remind me in Q3 FY26" a date instead of a topic.

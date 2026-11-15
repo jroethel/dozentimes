@@ -25,7 +25,31 @@ CREATE TABLE IF NOT EXISTS facts (
   last_accessed_at TEXT,
   access_count INTEGER NOT NULL DEFAULT 0,
   closed_by TEXT,
+  charge REAL NOT NULL DEFAULT 0,
+  charge_at TEXT,
   UNIQUE (source_path, section, text)
+);
+CREATE TABLE IF NOT EXISTS fact_links (
+  a INTEGER NOT NULL,
+  b INTEGER NOT NULL,
+  weight REAL NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (a, b)
+);
+CREATE INDEX IF NOT EXISTS fact_links_b ON fact_links (b);
+CREATE TABLE IF NOT EXISTS capsules (
+  id INTEGER PRIMARY KEY,
+  body TEXT NOT NULL,
+  trigger TEXT NOT NULL,
+  fire_at TEXT,
+  due_by TEXT,
+  topic TEXT,
+  anchor_text TEXT,
+  state TEXT NOT NULL,
+  sealed_at TEXT NOT NULL,
+  fired_at TEXT,
+  resolved_at TEXT,
+  reason TEXT
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS facts_fts USING fts5(project, section, text, content='facts', content_rowid='id');
 CREATE TRIGGER IF NOT EXISTS facts_ai AFTER INSERT ON facts BEGIN
@@ -63,9 +87,13 @@ export function openDb(path = defaultDbPath()): DatabaseSync {
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec(SCHEMA);
   // A ledger made before these columns existed keeps its rows and gains them.
-  for (const [table, col] of [["facts", "closed_by"], ["checks", "kind"]]) {
+  const added: [string, string, string][] = [
+    ["facts", "closed_by", "TEXT"], ["checks", "kind", "TEXT"],
+    ["facts", "charge", "REAL NOT NULL DEFAULT 0"], ["facts", "charge_at", "TEXT"],
+  ];
+  for (const [table, col, decl] of added) {
     const cols = (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
-    if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`);
+    if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
   }
   return db;
 }

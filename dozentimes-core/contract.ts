@@ -46,7 +46,27 @@ export interface LedgerFact {
   last_verified_at: string;
   verified_by: string;
   last_accessed_at: string | null;
+  charge?: number; // how much the fact has mattered lately: raised by each read, halved every CHARGE_HALF_LIFE_DAYS
   status: FactStatus;
+}
+
+// A sealed letter to a future reading, after hearth's capsules. A date trigger fires on fire_at; a topic trigger
+// fires when a question shares half its topic words, and not before fire_at when it has one. Firing only moves
+// sealed to fired. The agent or the person moves fired to surfaced or dismissed, or re-arms it back to sealed.
+export type CapsuleState = "sealed" | "fired" | "surfaced" | "dismissed";
+export interface Capsule {
+  id: number;
+  body: string;
+  trigger: "date" | "topic";
+  fire_at: string | null;
+  due_by: string | null; // the end of the intended window; a fired capsule past it is overdue
+  topic: string | null;
+  anchor_text: string | null; // the phrase the date came from, as the person said it
+  state: CapsuleState;
+  sealed_at: string;
+  fired_at: string | null;
+  resolved_at: string | null;
+  reason: string | null;
 }
 
 // Shelf life per volatility class, from research/temporal-memory/scorer.py half-lives.

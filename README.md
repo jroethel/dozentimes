@@ -40,7 +40,12 @@ Inside pi-time:
 - `dozentimes_ask` runs the pair: intent first, then the ledger reads at that time and re-checks stale facts against their source files.
 - `temporal_intent`, `ledger_query` and `ledger_verify` run each side alone.
 - `ledger_record` records what you say about a fact: that it still holds, or that it changed, with the new value when you give one.
-- `/dozentimes` shows ledger counts, the last traces and remaining work. `/dozentimes ingest`, `/dozentimes maintain 10`, `/dozentimes asof 2026-10-14`, `/dozentimes asof clear` and `/dozentimes trace 20` do what they say.
+- `capsule_seal` keeps intended time: "remind me next week to check the importer" becomes a capsule dated to next week, resolved on the day you said it.
+  With no date it fires when its topic comes up again.
+  Fired capsules are shown at startup, in the status line and in the turn's guidance; `capsule_resolve` surfaces, dismisses or re-arms one, and `capsule_list` lists them.
+- Every read raises the charge of the facts it returns, and charge halves every 14 days.
+  Facts returned together are linked, so when one of them changes, its stale companions are checked first.
+- `/dozentimes` shows ledger counts, the last traces and remaining work. `/dozentimes ingest`, `/dozentimes maintain 10`, `/dozentimes asof 2026-10-14`, `/dozentimes asof clear`, `/dozentimes trace 20` and `/dozentimes capsules` do what they say.
 
 Outside pi:
 
@@ -48,6 +53,9 @@ Outside pi:
 node dozentimes-intf/cli.ts "As of Oct 14, what was the plan?" "and for beta?"
 node dozentimes-agnt/cli.ts summary
 node dozentimes-agnt/cli.ts trace 20
+node dozentimes-agnt/cli.ts remind "remind me next week to check the importer"
+node dozentimes-agnt/cli.ts capsules
+node dozentimes-agnt/cli.ts resolve 1 surface
 ```
 
 ## Test

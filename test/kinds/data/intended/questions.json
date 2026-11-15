@@ -5,5 +5,19 @@
     "mode": "future",
     "start": "2026-10-26",
     "end": "2026-11-01"
+  },
+  {
+    "q": "remind me to look at the exporter again",
+    "now": "2026-10-22",
+    "mode": "future",
+    "topic": "look exporter",
+    "miss": "what is the orchard importer status",
+    "hit": "how are the exporters doing"
+  },
+  {
+    "q": "remind me on Oct 3 to file the VAT return",
+    "now": "2026-10-22",
+    "mode": "future",
+    "passed": true
   }
 ]

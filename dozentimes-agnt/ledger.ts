@@ -6,6 +6,7 @@ import { basename, dirname, join } from "node:path";
 import type { FactStatus, LedgerFact, TemporalIntent, Volatility } from "../dozentimes-core/index.ts";
 import { SHELF_LIFE_DAYS, askJev, daysBetween, isoDate, jevEnabled, trace } from "../dozentimes-core/index.ts";
 import type { JevQuestion } from "../dozentimes-core/index.ts";
+import { changedCompanion, decayed, hottest, reinforce } from "./charge.ts";
 
 export interface ExtractedFact {
   project: string;
@@ -453,8 +454,13 @@ export function readFacts(
   facts = retrieve(opts.ledger && opts.verify);
   // a caught change may have ingested replacement facts, so retrieve once more without verifying
   if (caught > 0) facts = retrieve(false);
-  const upd = db.prepare("UPDATE facts SET last_accessed_at = ?, access_count = access_count + 1 WHERE id = ?");
-  for (const f of facts) upd.run(opts.now, f.id);
+  // a read reinforces what it returned and links the facts it returned together
+  reinforce(db, facts.map((f) => f.id), opts.now);
+  const charged = db.prepare("SELECT charge, last_accessed_at FROM facts WHERE id = ?");
+  facts = facts.map((f) => {
+    const r = charged.get(f.id) as FactRow;
+    return { ...f, charge: r.charge, last_accessed_at: r.last_accessed_at };
+  });
   trace(db, {
     tool: "agnt.read",
     input: { mode, anchor: anchor?.text ?? null, query: q, ledger: opts.ledger, verify: opts.verify },
@@ -558,8 +564,12 @@ export async function maintain(db: DatabaseSync, now: string, budget: number, cl
   // reclassify first, so the check loop's shelf lives apply to the new kinds
   const { updated } = await reclassify(db, classifier);
   const lives = shelfLives(db);
-  const rows = (db.prepare("SELECT id, kind, source_path, last_verified_at FROM facts WHERE invalid_at IS NULL ORDER BY last_accessed_at IS NULL, last_accessed_at DESC, last_verified_at ASC").all() as FactRow[])
-    .filter((r) => needsCheck(r.kind, r.last_verified_at, now, lives) && !isConversation(r.source_path));
+  // Stale facts are checked in order of priority: charge now, plus the link to the strongest co-read companion that
+  // changed since the fact was last verified. Ties go to the most recently read, then the longest unverified.
+  const rows = (db.prepare("SELECT id, kind, source_path, last_verified_at, charge, charge_at FROM facts WHERE invalid_at IS NULL ORDER BY last_accessed_at IS NULL, last_accessed_at DESC, last_verified_at ASC").all() as FactRow[])
+    .filter((r) => needsCheck(r.kind, r.last_verified_at, now, lives) && !isConversation(r.source_path))
+    .map((r, i) => ({ ...r, i, priority: decayed(r.charge, r.charge_at, now) + changedCompanion(db, r.id, r.last_verified_at, now) }))
+    .sort((a, b) => b.priority - a.priority || a.i - b.i);
   let checked = 0, changed = 0;
   for (const r of rows) {
     if (checked >= budget) break;
@@ -588,5 +598,5 @@ export function summary(db: DatabaseSync, now: string) {
   const fallbacks = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE path = 'fallback' AND error IS NOT NULL").get() as FactRow).n as number;
   const kindPaths = db.prepare("SELECT kind_path, COUNT(*) AS n FROM facts GROUP BY kind_path").all() as FactRow[];
   const lastIngest = (db.prepare("SELECT MAX(ts) AS ts FROM traces WHERE tool = 'agnt.ingest'").get() as FactRow).ts as string | null;
-  return { total: rows.length, byStatus, byKind, byProject, fallbacks, kindPaths: Object.fromEntries(kindPaths.map((r) => [r.kind_path, r.n])), lastIngest, lives };
+  return { total: rows.length, byStatus, byKind, byProject, fallbacks, kindPaths: Object.fromEntries(kindPaths.map((r) => [r.kind_path, r.n])), lastIngest, lives, hottest: hottest(db, now) };
 }

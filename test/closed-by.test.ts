@@ -65,6 +65,9 @@ test("openDb adds the new columns to a populated ledger made before they existed
   const cols = (t: string) => (db.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c) => c.name);
   assert.ok(cols("facts").includes("closed_by"));
   assert.ok(cols("checks").includes("kind"));
+  assert.ok(cols("facts").includes("charge") && cols("facts").includes("charge_at"));
+  assert.equal((db.prepare("SELECT charge FROM facts").get() as any).charge, 0);
+  assert.ok(cols("capsules").includes("fire_at") && cols("fact_links").includes("weight"));
   assert.equal((db.prepare("SELECT COUNT(*) AS n FROM facts").get() as any).n, 1);
   assert.equal((db.prepare("SELECT COUNT(*) AS n FROM checks").get() as any).n, 1);
   db.close();

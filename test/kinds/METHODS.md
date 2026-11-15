@@ -57,9 +57,11 @@ It also proves a person's statement is recorded: holds verifies with `verified_b
 
 ## access
 
-Method: two stale facts where the newer one is read, then `maintain(db, now, 1)`.
-Data: `data/access/history.json`.
+Method: two stale facts where the newer one is read, then `maintain(db, now, 1)`; the same facts read at several clocks; and three stale checklist items where two are read together and one of those two is ticked off later.
+Data: `data/access/history.json`, and the co-read files written inline in `access.test.ts`.
 A pass proves the recently read stale fact is checked first and the other is left alone.
+It also proves the charge (#17): a read adds a tenth of the headroom below 1, charge halves every 14 days, and a fact read four times last week is checked before a fact read once yesterday.
+And it proves the co-read link: a stale fact whose companion changed after it was last verified is checked first, and the same change does nothing when the two were read apart.
 Nothing is todo.
 
 ## volatility
@@ -72,10 +74,12 @@ Nothing is todo.
 
 ## intended
 
-Method: `parseIntent` on "remind me next week to check the importer" against a gold mode and anchor.
-Data: `data/intended/questions.json`.
-A pass proves a reminder is read as a future intent anchored in the following Monday to Sunday, with the intended kind.
-Todo: #8, nothing stores the intent, so no scheduled item exists.
+Method: `parseIntent` on reminders against a gold mode and anchor, then `sealCapsule` with that intent and `fireCapsules` at clocks before, inside and after the window.
+Data: `data/intended/questions.json`: a dated reminder, an undated one with a topic and its hit and miss questions, and a date that has passed.
+A pass proves a reminder is read as a future intent anchored in the following Monday to Sunday, with the intended kind, and that it is stored (#8).
+The capsule's date is resolved on the day it was sealed, it fires once on the first check inside its window, and only the caller surfaces, dismisses or re-arms it.
+An undated reminder fires when a later question holds half its topic words, a topic with a date fires only from that date, and a date that has passed is refused.
+Nothing is todo.
 
 ## business
 

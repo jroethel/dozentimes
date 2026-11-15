@@ -12,6 +12,8 @@ import { jevEnabled, openDb, recentTraces, today } from "../../../../dozentimes-
 import type { Session, TemporalIntent } from "../../../../dozentimes-core/index.ts";
 import { describeIntent, parseIntent } from "../../../../dozentimes-intf/intent.ts";
 import { discoverSources, ingestPaths, maintain, readFacts, recordStatement, summary, verifyFact } from "../../../../dozentimes-agnt/ledger.ts";
+import { describeCapsule, fireCapsules, listCapsules, readyCapsules, resolveCapsule, sealCapsule } from "../../../../dozentimes-agnt/capsules.ts";
+import type { Capsule, CapsuleState } from "../../../../dozentimes-core/index.ts";
 
 const REPO = process.env.DOZENTIMES_REPO ?? join(import.meta.dirname, "..", "..", "..", "..");
 const ISSUE_REPO = "jroethel/dozentimes";
@@ -100,7 +102,8 @@ function status(ctx: Ctx): void {
     const reading = lastIntent ? describeIntent(lastIntent).replace(/^answering /, "") : "none yet";
     const fb = (db.prepare("SELECT COUNT(*) AS n FROM traces WHERE id > ? AND path = 'fallback' AND error IS NOT NULL").get(traceBase) as { n: number }).n;
     const jev = fb ? `jev FALLBACK ${fb}` : jevEnabled() ? "jev ok" : "jev off";
-    ctx.ui.setStatus("dozentimes", `dt ${s.total} facts | ${s.byStatus.needs_check} stale | reading: ${reading} | ${jev}`);
+    const ready = readyCapsules(db).length;
+    ctx.ui.setStatus("dozentimes", `dt ${s.total} facts | ${s.byStatus.needs_check} stale${ready ? ` | ${ready} capsule${ready > 1 ? "s" : ""} ready` : ""} | reading: ${reading} | ${jev}`);
   } catch { /* status is best effort */ }
 }
 
@@ -216,6 +219,72 @@ const recordTool = defineTool({
   },
 });
 
+// A time phrase in the person's words, read against today the way a question is, without changing the session as-of.
+const whenOf = async (when: string): Promise<TemporalIntent> =>
+  (await parseIntent(when, { now: today(), ambient: null }, { db: need() })).intent;
+
+const sealTool = defineTool({
+  name: "capsule_seal",
+  label: "Capsule seal",
+  description: "Seal a capsule: a note that comes back later. Use it when the person asks to be reminded of something, or when a plan, check or decision should resurface at a date or when a topic returns. The date in `when` is resolved against today, so \"next week\" means the week after today. With no date it fires when its topic comes up again.",
+  parameters: Type.Object({
+    note: Type.String({ description: "what to bring back, written for whoever reads it then" }),
+    when: Type.Optional(Type.String({ description: "when it should come back, in the person's words, e.g. \"next week\", \"on Nov 3\"; omit to use the time phrase in the note" })),
+    topic: Type.Optional(Type.String({ description: "words that fire it when a later question mentions them; with a date it fires on the topic only from that date" })),
+  }),
+  async execute(_id, params) {
+    const intent = await whenOf(params.when ?? params.note);
+    const c = sealCapsule(need(), params.note, intent, today(), { topic: params.topic, strict: params.when !== undefined });
+    traceLine({ event: "capsule_seal", note: params.note, when: params.when ?? null, capsule: c });
+    return { ...text(`sealed ${describeCapsule(c, today())}`), details: { capsule: c } };
+  },
+});
+
+const resolveTool = defineTool({
+  name: "capsule_resolve",
+  label: "Capsule resolve",
+  description: "Decide on a capsule once it has been dealt with. surface: you told the person. dismiss: it no longer matters, with a reason. rearm: bring it back later, with a new `when` or `topic`. To hold a fired capsule for a better moment, do not call this.",
+  parameters: Type.Object({
+    capsule_id: Type.Number({ description: "the #id shown with the capsule" }),
+    action: Type.String({ description: "surface | dismiss | rearm" }),
+    reason: Type.Optional(Type.String({ description: "why, required for dismiss" })),
+    when: Type.Optional(Type.String({ description: "for rearm: when it should come back, in the person's words" })),
+    topic: Type.Optional(Type.String({ description: "for rearm: words that fire it when they come up" })),
+  }),
+  async execute(_id, params) {
+    const now = today();
+    const r = params.action === "surface" ? { action: "surface" as const }
+      : params.action === "dismiss" ? { action: "dismiss" as const, reason: params.reason ?? "" }
+      : params.action === "rearm" ? { action: "rearm" as const, intent: await whenOf(params.when ?? ""), topic: params.topic }
+      : null;
+    if (!r) throw new Error(`unknown action ${params.action}; use surface, dismiss or rearm`);
+    const c = resolveCapsule(need(), params.capsule_id, r, now);
+    traceLine({ event: "capsule_resolve", capsule_id: params.capsule_id, action: params.action, capsule: c });
+    return { ...text(describeCapsule(c, now)), details: { capsule: c } };
+  },
+});
+
+const listTool = defineTool({
+  name: "capsule_list",
+  label: "Capsule list",
+  description: "List capsules: sealed (waiting for their date or topic), fired (ready to surface), surfaced or dismissed. Omit state for all.",
+  parameters: Type.Object({ state: Type.Optional(Type.String({ description: "sealed | fired | surfaced | dismissed" })) }),
+  async execute(_id, params) {
+    const d = need(), now = today();
+    fireCapsules(d, now);
+    const cs = listCapsules(d, params.state as CapsuleState | undefined);
+    return { ...text(cs.length ? cs.map((c) => describeCapsule(c, now)).join("\n") : "no capsules"), details: { capsules: cs } };
+  },
+});
+
+const capsuleGuidance = (ready: Capsule[]): string => ready.length ? [
+  "",
+  "## Capsules ready to surface",
+  ...ready.map((c) => `- ${describeCapsule(c, today())}`),
+  "These are notes sealed earlier to come back now. Bring each up when it fits this turn, then call capsule_resolve with surface.",
+  "If one no longer matters, dismiss it with a reason; if it should wait, rearm it with a new when or topic; to hold it for a better moment, leave it.",
+].join("\n") : "";
+
 const guidance = (intent: TemporalIntent): string => [
   "",
   "## Dozentimes reading for this turn",
@@ -225,6 +294,7 @@ const guidance = (intent: TemporalIntent): string => [
   "Say the reading back in one short line (\"Answering as of ...\").",
   "Never present a replaced or needs_check fact as current. For needs_check facts say they could not be confirmed.",
   "When the person says a ledger fact still holds or has changed, call ledger_record with its #id; pass new_text when they gave the new value. If they say you changed the wrong fact, call ledger_record on it with holds true.",
+  "When the person asks to be reminded of something later, call capsule_seal with the note and their time phrase.",
 ].join("\n");
 
 async function command(args: string, ctx: Ctx): Promise<void> {
@@ -242,6 +312,11 @@ async function command(args: string, ctx: Ctx): Promise<void> {
     else if (/^\d{4}-\d{2}-\d{2}$/.test(arg ?? "")) { session = { ...session, ambient: { start: arg, end: arg, text: arg } }; msg = `session as-of set to ${arg}`; }
     else msg = "usage: /dozentimes asof <YYYY-MM-DD>|clear";
   } else if (sub === "trace") msg = traces(Number(arg ?? 10) || 10);
+  else if (sub === "capsules") {
+    fireCapsules(d, now);
+    const cs = listCapsules(d, arg as CapsuleState | undefined);
+    msg = cs.length ? cs.map((c) => describeCapsule(c, now)).join("\n") : "no capsules";
+  }
   else {
     const s = summary(d, now);
     msg = [
@@ -250,6 +325,8 @@ async function command(args: string, ctx: Ctx): Promise<void> {
       ...Object.entries(s.lives).map(([k, l]) =>
         `shelf life ${k}: ${l.days === null ? "never goes stale" : `${l.days} days`} (${l.fitted ? "fitted" : "hand-set"}, checks ${l.n}, facts ${l.facts}, user ${l.user})`),
       `session as-of: ${session.ambient ? session.ambient.text : "none"}`,
+      `capsules: ${["sealed", "fired"].map((st) => `${listCapsules(d, st as CapsuleState).length} ${st}`).join(", ")}`,
+      ...(s.hottest.length ? ["most charged facts:", ...s.hottest.map((h) => `  ${h.charge.toFixed(2)}  #${h.id} ${h.project}: ${h.text.slice(0, 70)}`)] : []),
       "top projects:", ...s.byProject.map(([p, n]) => `  ${n}  ${p}`),
       "last 10 traces:", traces(10),
       remainingText(),
@@ -265,8 +342,11 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool(queryTool);
   pi.registerTool(verifyTool);
   pi.registerTool(recordTool);
+  pi.registerTool(sealTool);
+  pi.registerTool(resolveTool);
+  pi.registerTool(listTool);
   pi.registerCommand("dozentimes", {
-    description: "Ledger summary. Subcommands: ingest, maintain [n], asof <date>|clear, trace [n]",
+    description: "Ledger summary. Subcommands: ingest, maintain [n], asof <date>|clear, trace [n], capsules [state]",
     handler: async (args, ctx) => {
       try { await command(args ?? "", ctx); } catch (e) { out(ctx, `dozentimes: ${e instanceof Error ? e.message : String(e)}`, "error"); }
     },
@@ -284,6 +364,11 @@ export default function (pi: ExtensionAPI) {
     } catch (e) {
       out(ctx, `[pi-time] startup ledger error: ${e instanceof Error ? e.message : String(e)}`, "error");
     }
+    try {
+      fireCapsules(need(), today());
+      const ready = readyCapsules(need());
+      if (ready.length) report.push(`Capsules ready to surface:\n${ready.map((c) => `  - ${describeCapsule(c, today())}`).join("\n")}`);
+    } catch (e) { report.push(`capsules unavailable: ${e instanceof Error ? e.message : String(e)}`); }
     try { report.push(remainingText()); } catch (e) { report.push(`remaining work unavailable: ${e instanceof Error ? e.message : String(e)}`); }
     const msg = report.join("\n");
     ctx.ui.notify(msg, "info");
@@ -295,10 +380,13 @@ export default function (pi: ExtensionAPI) {
     try {
       const intent = await parse(e.prompt);
       turn = { prompt: e.prompt, intent };
+      // date capsules whose day came, and topic capsules this prompt names, fire before the agent starts
+      fireCapsules(need(), today(), e.prompt);
+      const ready = readyCapsules(need());
       traceLine({ event: "turn", prompt: e.prompt, intent, reading: describeIntent(intent) });
       if (!ctx.hasUI) console.error(`[pi-time] reading: ${describeIntent(intent)} | mode ${intent.asof_mode} anchor ${intent.anchor?.start ?? "none"} basis ${intent.basis} path ${intent.path}`);
       status(ctx);
-      return { systemPrompt: e.systemPrompt + guidance(intent) };
+      return { systemPrompt: e.systemPrompt + guidance(intent) + capsuleGuidance(ready) };
     } catch (err) {
       out(ctx, `[pi-time] intent parse failed: ${err instanceof Error ? err.message : String(err)}`, "error");
     }
