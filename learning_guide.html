@@ -237,6 +237,36 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
-<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8), the video session (section 9) and the ledger issues chain (section 10), and on 2026-10-24 with the rename to dozentimes (section 11). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
+<h2>12. Updates - integration, RAG fit and prior work (2026-10-24)</h2>
+<section class="card">
+<dl>
+<dt>The libraries are harness-free, and all pi coupling sits in one file.</dt>
+<dd><code>dozentimes-core</code>, <code>dozentimes-intf</code> and <code>dozentimes-agnt</code> (about 1,100 lines) never import pi and need only Node 26 built-ins and <code>chrono-node</code>. <code>pi-time/agent/extensions/dozentimes/index.ts</code> (309 lines) does the three things any other harness must repeat: register the five tools, read each prompt's time in <code>before_agent_start</code>, and hold the session's as-of across turns.</dd>
+<dt>MCP can carry the tools but not the per-prompt reading.</dt>
+<dd>An MCP server acts only when the model calls a tool, so the reading needs a prompt hook where the harness has one. Claude Code's <code>UserPromptSubmit</code> hook should work (from training, not checked). Elsewhere the model has to call <code>dozentimes_ask</code> itself. Issue #16 holds the plan.</dd>
+<dt>Source discovery is hardwired to one person's file names.</dt>
+<dd><code>discoverSources</code> (<code>dozentimes-agnt/ledger.ts:336</code>) takes only <code>whats_next.md</code>, <code>HANDOFF.md</code>, <code>docs/handoffs/*.md</code> and <code>learning_guide*.html</code>, at most 4 levels deep. Extraction takes only bullets of 12 characters or more and HTML <code>&lt;dt&gt;</code> elements and first table cells, dated from a heading, filename, title or file time. Prose, git dates and dates written in the text are not read, so the ledger is not yet a general corpus annotator.</dd>
+<dt>The intent reader works on general chatbot questions, except quarters.</dt>
+<dd>On refund and pricing questions it read "in March 2025", the inherited follow-up "and for international orders?" and "now" right on both paths, and missed "since Q2" on both, which waits on the fiscal calendar in #9. For a RAG system it can work as a query preprocessor: the anchor becomes a date filter and <code>query</code> is the question without its time words.</dd>
+<dt><code>DOZENTIMES_JEV=0</code> does not turn Jev off.</dt>
+<dd><code>jevEnabled</code> (<code>dozentimes-core/jev.ts:15-16</code>) turns Jev off only for the value <code>off</code>.</dd>
+<dd class="why">Discovered 2026-10-24, when a run meant for the rules path printed <code>"path":"jev"</code> on every reading.</dd>
+<dt>No test yet shows that an agent needs dozentimes.</dt>
+<dd>The ablation's <code>none</code> config is retrieval without time handling, not an LLM working without the tools, and the e2e suite always loads the tools. A no-tools e2e run (same model, same docs, file tools only, same judge) is the missing check.</dd>
+<dt>Published 2026 work already covers the ledger's core design.</dt>
+<dd>MemStrata (<a href="https://arxiv.org/abs/2606.26511">arXiv 2606.26511</a>, and <a href="https://arxiv.org/abs/2608.20685">2608.20685</a> on real GitHub histories) is a bi-temporal ledger with deterministic replacement rules. <a href="https://arxiv.org/abs/2609.11515">ChurnBench</a> finds that the refresh schedule against each entity's change rate sets staleness, which is close to fitted shelf lives. <a href="https://arxiv.org/abs/2605.06527">STALE</a> and <a href="https://arxiv.org/abs/2610.10265v1">2610.10265</a> also measure stale facts. From their abstracts none tests Zep/Graphiti, Mem0 or Letta. Two parts of dozentimes remain distinct: the question's own time (past against now, inherited across turns) and harm measured separately from accuracy.</dd>
+<dd class="why">Surfaced 2026-10-24 by checking a claim before it was repeated. Earlier answers in the same session had called a staleness benchmark new, from memory.</dd>
+<dt>Competitor features were checked against vendor docs, not recalled.</dt>
+<dd>Graphiti keeps <code>valid_at</code>, <code>invalid_at</code> and <code>expired_at</code> on edges and invalidates a fact when a contradicting one arrives. Mem0 offers a manual <code>expiration_date</code> and a decay that ranks recently accessed memories higher. Neither was run.</dd>
+</dl>
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr><td>Integrate through one stdio MCP server plus a prompt hook (#16)</td><td>An adapter per harness, or a package only</td><td>One server covers most harnesses, and the hook covers the one thing MCP cannot do.</td></tr>
+<tr><td>Make source patterns configurable as a change of its own</td><td>Fold it into the MCP work</td><td>Without it no adapter helps a user whose notes use other file names.</td></tr>
+<tr><td>Keep commercial and strategy notes out of this repo</td><td>A file under <code>docs/</code></td><td>The repo is public. The notes live in <code>~/create/dozentimes-private/</code>.</td></tr>
+</table>
+</section>
+
+<footer>Generated from the 2026-10-21 to 2026-10-22 build session (Claude Opus 5.5 + Jeremy). Updated 2026-10-22 with the test-suites session (section 8), the video session (section 9) and the ledger issues chain (section 10), and on 2026-10-24 with the rename to dozentimes (section 11) and the integration, RAG fit and prior-work review (section 12). Companion docs live in <code>docs/plans/</code>, <code>docs/research/</code>, <code>test/kinds/METHODS.md</code>, <code>test/replay/README.md</code>, <code>test/e2e/README.md</code>, <code>whats_next.md</code> and <code>README.md</code>.</footer>
 </body>
 </html>

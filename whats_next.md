@@ -131,6 +131,23 @@ Secondary metric: verification actions spent (both should spend fewer, on the fa
 - The old-path leftovers were deleted: the `~/.claude.json` project entry, the old Claude projects folder, the old pi session folders, and the pre-rename ledger copy.
 - Next: #14 (`agent:todo`), and #15 when the tagline is chosen.
 
+## 2026-10-24 integration, RAG fit and prior work
+- A review session on how dozentimes fits other harnesses and other uses, with no code changes.
+- Filed #16 (no label, so pi-time does not list it at startup): integrate with harnesses other than pi through one stdio MCP server, a prompt hook for the per-prompt reading, configurable source patterns and a packaging decision.
+- The libraries never import pi, and all pi coupling is in `pi-time/agent/extensions/dozentimes/index.ts` (309 lines): tool registration, the `before_agent_start` reading and the session as-of.
+- Source discovery is hardwired to `whats_next.md`, `HANDOFF.md`, `docs/handoffs/*.md` and `learning_guide*.html` (`dozentimes-agnt/ledger.ts:336`), so another user's notes give an almost empty ledger.
+- On general chatbot questions the intent reader read a stated month, an inherited follow-up and a "now" question right on both paths, read "since June 1" right on the rules path (not run on Jev), and missed "since Q2" on both (#9).
+- `DOZENTIMES_JEV=0` does not turn Jev off, because `jevEnabled` checks for `off` only (`dozentimes-core/jev.ts:15-16`).
+- No run compares an agent with the tools against the same agent without them: the ablation's `none` config is retrieval without time handling, and the e2e suite always loads the tools. Not filed yet.
+- Prior work: five 2026 papers already measure stale-fact errors. MemStrata (arXiv 2606.26511, 2608.20685) is a bi-temporal ledger with deterministic replacement, and ChurnBench (2609.11515) finds that refresh schedule against each entity's change rate sets staleness. From their abstracts none tests Zep/Graphiti, Mem0 or Letta.
+- Strategy notes from this session live outside this public repo, in `~/create/dozentimes-private/`.
+- Next: #14, #15 when the tagline is chosen, and the no-tools e2e baseline if Jeremy wants it filed.
+
+## 2026-10-29 time map
+- Asked: scatter charts that position the twelve kinds on interface against agentic and ephemeral against durable, with agentic split into agent work and oversight.
+- Built `docs/design/time-map/time-map.html` (local, not committed): a two-pole plane, a three-lane by four-lifespan grid, and a placement table with the reason for each point.
+- Finding: the oversight lane holds only record and verification, and no agentic time lives for just a turn or a session.
+
 ## 2026-11-14 capsules and charge
 - Asked: take back two ideas from the Lume/Mira stack (hearth capsules, mnemodyne charge) after mapping it against the twelve kinds.
 - #8 built: `dozentimes-agnt/capsules.ts` stores intended time as capsules (sealed, fired, surfaced, dismissed). A future intent's anchor is the date trigger, resolved on the day it was said; with no date the capsule fires on its topic words.
